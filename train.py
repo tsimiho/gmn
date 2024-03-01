@@ -12,10 +12,7 @@ from gmn_utils import *
 from loss import pairwise_loss, triplet_loss
 
 # Set GPU
-os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
-os.environ["CUDA_VISIBLE_DEVICES"] = "1"
-use_cuda = torch.cuda.is_available()
-device = torch.device("cuda:0" if use_cuda else "cpu")
+device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 print(device)
 
 # Print configure
@@ -203,6 +200,10 @@ for i_iter in range(config["training"]["n_training_steps"]):
                 info_str += ", " + ", ".join(
                     ["%s %.4f" % ("val/" + k, v) for k, v in eval_metrics.items()]
                 )
+                torch.save({
+                            'model_state_dict': model.state_dict(),
+                            'optimizer_state_dict': optimizer.state_dict(),
+                           }, 'checkpoint.pth')
             model.train()
         print("iter %d, %s, time %.2fs" % (i_iter + 1, info_str, time.time() - t_start))
         t_start = time.time()
