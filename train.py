@@ -200,10 +200,6 @@ for i_iter in range(config["training"]["n_training_steps"]):
                 info_str += ", " + ", ".join(
                     ["%s %.4f" % ("val/" + k, v) for k, v in eval_metrics.items()]
                 )
-                torch.save({
-                            'model_state_dict': model.state_dict(),
-                            'optimizer_state_dict': optimizer.state_dict(),
-                           }, 'checkpoint.pth')
             model.train()
         print("iter %d, %s, time %.2fs" % (i_iter + 1, info_str, time.time() - t_start))
         t_start = time.time()
