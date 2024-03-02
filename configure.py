@@ -52,8 +52,8 @@ def get_default_config():
                 # always generate graphs with 20 nodes and p_edge=0.2.
                 n_nodes_range=[100, 200],
                 p_edge_range=[0.2, 0.4],
-                n_changes_positive=3,
-                n_changes_negative=4,
+                n_changes_positive=2,
+                n_changes_negative=3,
                 validation_dataset_size=1000,
             ),
         ),
@@ -72,7 +72,7 @@ def get_default_config():
             # Add gradient clipping to avoid large gradients.
             clip_value=10.0,
             # Increase this to train longer.
-            n_training_steps=1000,
+            n_training_steps=5000,
             # Print training information every this many training steps.
             print_after=100,
             # Evaluate on validation set every `eval_after * print_after` steps.
