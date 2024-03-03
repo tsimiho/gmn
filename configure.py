@@ -51,9 +51,9 @@ def get_default_config():
             dataset_params=dict(
                 # always generate graphs with 20 nodes and p_edge=0.2.
                 n_nodes_range=[100, 200],
-                p_edge_range=[0.2, 0.4],
-                n_changes_positive=2,
-                n_changes_negative=3,
+                p_edge_range=[0.2, 0.25],
+                n_changes_positive=1,
+                n_changes_negative=2,
                 validation_dataset_size=1000,
             ),
         ),
