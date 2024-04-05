@@ -1,6 +1,7 @@
 import torch
 from torch_geometric.nn import BatchNorm, MessagePassing
 from torch_scatter import scatter_mean
+
 from utils import batch_block_pair_attention
 
 
@@ -68,4 +69,4 @@ class GraphAggregator(torch.nn.Module):
         x_states = x_states * x_gates
         x_states = scatter_mean(x_states, batch, dim=0)
         x_states = self.lin_final(x_states)
-        return x_state
+        return x_states

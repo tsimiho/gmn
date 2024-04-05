@@ -3,7 +3,7 @@ from sklearn.metrics import accuracy_score, f1_score
 from torch.nn import functional as F
 
 
-def acc_f1(output, labels, average="binary"):
+def acc_f1(output, labels, average="binary", logging=None, verbose=True):
     preds = output.max(1)[1].type_as(labels)
     if preds.is_cuda:
         preds = preds.cpu()
@@ -15,7 +15,6 @@ def acc_f1(output, labels, average="binary"):
 
 def dynamic_partition(data, partitions, num_partitions):
     res = []
-    print(data.shape, partitions.shape)
     for i in range(num_partitions):
         res.append(data[torch.where(partitions == i)])
     return res
@@ -86,3 +85,13 @@ def batch_block_pair_attention(data, batch, n_graphs):
     results = torch.cat(results, dim=0)
     results = results.view(data.shape)
     return results
+
+
+def calculate_accuracy(emb_1, emb_2, labels, margin):
+    distances = torch.norm(emb_1 - emb_2, p=2, dim=1)
+    threshold = margin
+    predictions = torch.where(distances < threshold, 1, -1)
+    correct_predictions = torch.eq(predictions, labels).sum().item()
+    total_predictions = labels.size(0)
+    accuracy = correct_predictions / total_predictions
+    return accuracy
