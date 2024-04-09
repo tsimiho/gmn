@@ -11,10 +11,10 @@
   - DBSCAN
   - GORAN
 
-
-# TODO
-- clustering methods and hyperparameters
-- num layers
-- layer dimensions
-- batch size ? (maybe for enzymes)
-- 
+- Trainable:
+  - MinCutPool
+  - SAG
+  _ DiffPool
+  - DMoN
+  - JustBalance
+  - Top-K
