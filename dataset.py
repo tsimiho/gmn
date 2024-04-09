@@ -92,7 +92,7 @@ def add_noise_to_graph(graph, num_new_nodes, avg_new_edges_per_node=2):
     new_edges = torch.tensor(new_edges_list, dtype=torch.long).t()
     new_edge_index = torch.cat([graph.edge_index, new_edges], dim=1)
 
-    x = torch.zeros(graph.num_nodes + num_new_nodes, 4)
+    x = torch.ones(graph.num_nodes + num_new_nodes, 4)
 
     new_graph = Data(
         x=x,
@@ -112,8 +112,66 @@ funcs = [
     create_wheel_graph,
 ]
 
-nodes = [2, 3, 4]
-edges = [4, 5, 6]
+nodes = [1, 2, 3]
+edges = [2, 3, 4]
+
+
+import torch
+from torch_geometric.nn import Node2Vec
+
+
+def add_node2vec_features(
+    data_list,
+    embedding_dim=32,
+    walk_length=10,
+    context_size=5,
+    walks_per_node=20,
+    num_negative_samples=2,
+    batch_size=128,
+    learning_rate=0.01,
+    epochs=200,
+):
+    updated_data_list = []
+    for data in data_list:
+        if "edge_index" not in data:
+            print("Graph does not contain edge_index.")
+            continue
+
+        model = Node2Vec(
+            data.edge_index,
+            embedding_dim=embedding_dim,
+            walk_length=walk_length,
+            context_size=context_size,
+            walks_per_node=walks_per_node,
+            num_negative_samples=num_negative_samples,
+            sparse=True,
+        )
+
+        loader = model.loader(batch_size=batch_size, shuffle=True, num_workers=0)
+        optimizer = torch.optim.SparseAdam(model.parameters(), lr=learning_rate)
+
+        model.train()
+        for epoch in range(epochs):
+            total_loss = 0
+            for pos_rw, neg_rw in loader:
+                optimizer.zero_grad()
+                loss = model.loss(pos_rw, neg_rw)
+                loss.backward()
+                optimizer.step()
+                total_loss += loss.item()
+            print(f"Epoch: {epoch}, Loss: {total_loss / len(loader)}")
+
+        model.eval()
+        with torch.no_grad():
+            embeddings = model()
+
+        data.x = (
+            torch.cat([data.x, embeddings], dim=1) if data.x is not None else embeddings
+        )
+
+        updated_data_list.append(data)
+
+    return updated_data_list
 
 
 class GraphDataset(Dataset):
@@ -137,4 +195,5 @@ def create_dataset():
                 for e in edges:
                     noisy_graph = add_noise_to_graph(graph, n, e)
                     graphs.append(noisy_graph)
-    return GraphDataset(graphs)
+    updated_graphs = add_node2vec_features(graphs)
+    return GraphDataset(updated_graphs)
