@@ -19,13 +19,13 @@ def create_cycle_graph(n_nodes):
     )
 
 
-def create_complete_graph(n_nodes):
-    edge_index = [[i, j] for i in range(n_nodes) for j in range(n_nodes) if i != j]
-    return Data(
-        edge_index=torch.tensor(edge_index).t().contiguous(),
-        y=torch.tensor([1]),
-        num_nodes=n_nodes,
-    )
+# def create_complete_graph(n_nodes):
+#     edge_index = [[i, j] for i in range(n_nodes) for j in range(n_nodes) if i != j]
+#     return Data(
+#         edge_index=torch.tensor(edge_index).t().contiguous(),
+#         y=torch.tensor([1]),
+#         num_nodes=n_nodes,
+#     )
 
 
 def create_line_graph(n_nodes):
@@ -39,25 +39,25 @@ def create_line_graph(n_nodes):
     )
 
 
-def create_star_graph(n_leaves):
-    edge_index = [[0, i] for i in range(1, n_leaves + 1)] + [
-        [i, 0] for i in range(1, n_leaves + 1)
-    ]
-    return Data(
-        edge_index=torch.tensor(edge_index).t().contiguous(),
-        y=torch.tensor([3]),
-        num_nodes=n_leaves + 1,
-    )
+# def create_star_graph(n_leaves):
+#     edge_index = [[0, i] for i in range(1, n_leaves + 1)] + [
+#         [i, 0] for i in range(1, n_leaves + 1)
+#     ]
+#     return Data(
+#         edge_index=torch.tensor(edge_index).t().contiguous(),
+#         y=torch.tensor([3]),
+#         num_nodes=n_leaves + 1,
+#     )
 
 
-def create_wheel_graph(n_nodes):
-    edges = []
-    for i in range(1, n_nodes):
-        edges.append([0, i])
-        edges.append([i, i % (n_nodes - 1) + 1])
-    edges += [[j, i] for i, j in edges]
-    edge_index = torch.tensor(edges, dtype=torch.long).t().contiguous()
-    return Data(edge_index=edge_index, y=torch.tensor([4]), num_nodes=n_nodes)
+# def create_wheel_graph(n_nodes):
+#     edges = []
+#     for i in range(1, n_nodes):
+#         edges.append([0, i])
+#         edges.append([i, i % (n_nodes - 1) + 1])
+#     edges += [[j, i] for i, j in edges]
+#     edge_index = torch.tensor(edges, dtype=torch.long).t().contiguous()
+#     return Data(edge_index=edge_index, y=torch.tensor([4]), num_nodes=n_nodes)
 
 
 def plot_graph(data):
@@ -105,11 +105,11 @@ def add_noise_to_graph(graph, num_new_nodes, avg_new_edges_per_node=2):
 
 
 funcs = [
-    create_complete_graph,
+    # create_complete_graph,
     create_cycle_graph,
     create_line_graph,
-    create_star_graph,
-    create_wheel_graph,
+    # create_star_graph,
+    # create_wheel_graph,
 ]
 
 nodes = [1, 2, 3]
@@ -184,6 +184,9 @@ class GraphDataset(Dataset):
 
     def __getitem__(self, idx):
         return self.data_list[idx]
+    
+    def save(self, file_path):
+        torch.save(self.data_list, file_path)
 
 
 def create_dataset():
@@ -197,3 +200,4 @@ def create_dataset():
                     graphs.append(noisy_graph)
     updated_graphs = add_node2vec_features(graphs)
     return GraphDataset(updated_graphs)
+
