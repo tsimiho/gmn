@@ -330,9 +330,7 @@ def plot_graph_pair(data1, data2):
     plt.show()
 
 
-def plot_graphs(
-    edge_index, layer_clusters, graph1, graph2, sim, title="", trainable=False
-):
+# def plot_graphs(edge_index, layer_clusters, graph1, graph2, title="", trainable=False):
     num_rows = len(layer_clusters)
     fig, axes = plt.subplots(num_rows, 4, figsize=(32, num_rows * 8))
 
@@ -354,7 +352,7 @@ def plot_graphs(
         fig.text(
             0.75, 0.95, f"Graph2 ({graph2})", ha="center", va="center", fontsize=17
         )
-        fig.text(0.5, 0.97, f"Sim: {sim}", ha="center", va="center", fontsize=17)
+        # fig.text(0.5, 0.97, f"Sim: {sim}", ha="center", va="center", fontsize=17)
     else:
         x_pos = (
             axes[1].get_position().x1
@@ -369,7 +367,7 @@ def plot_graphs(
         )
         fig.text(0.25, 0.9, f"Graph1 ({graph1})", ha="center", va="center", fontsize=17)
         fig.text(0.75, 0.9, f"Graph2 ({graph2})", ha="center", va="center", fontsize=17)
-        fig.text(0.5, 0.95, f"Sim: {sim}", ha="center", va="center", fontsize=17)
+        # fig.text(0.5, 0.95, f"Sim: {sim}", ha="center", va="center", fontsize=17)
 
     fig.suptitle(title, fontsize=20, va="bottom", ha="center")
 
@@ -444,6 +442,81 @@ def plot_graphs(
         fig.subplots_adjust(top=0.9)
     else:
         fig.subplots_adjust(top=0.8)
+    plt.show()
+
+
+def normalize_attention(a_x_s):
+    a_min, a_max = a_x_s.min(), a_x_s.max()
+    if a_max > a_min:
+        return (a_x_s - a_min) / (a_max - a_min)
+    return a_x_s
+
+
+def visualize_graphs_with_attention(
+    graph1, graph2, a_x_s, a_y_s, threshold=0.9, topk=None
+):
+    G1 = to_networkx(graph1, to_undirected=True)
+    G2 = to_networkx(graph2, to_undirected=True)
+
+    pos1 = nx.kamada_kawai_layout(G1)
+    pos2 = nx.kamada_kawai_layout(G2)
+
+    pos2_shifted = {k: [v[0] + 3, v[1]] for k, v in pos2.items()}
+
+    plt.figure(figsize=(24, 14))
+    nx.draw(
+        G1, pos1, with_labels=True, node_color="skyblue", edge_color="k", node_size=700
+    )
+    nx.draw(
+        G2,
+        pos2_shifted,
+        with_labels=True,
+        node_color="lightcoral",
+        edge_color="k",
+        node_size=700,
+    )
+
+    combined_pos = {**pos1, **{k + len(G1): v for k, v in pos2_shifted.items()}}
+
+    a_x_s = normalize_attention(a_x_s)
+    a_y_s = normalize_attention(a_y_s).T
+
+    def keep_topk(tensor, k):
+        topk_values, topk_indices = torch.topk(tensor, k=k, dim=1)
+        zero_tensor = torch.zeros_like(tensor)
+        zero_tensor.scatter_(1, topk_indices, topk_values)
+
+        return zero_tensor
+
+    if topk:
+        a_x_s = keep_topk(a_x_s, topk)
+        a_y_s = keep_topk(a_y_s, topk)
+
+    for i, j in torch.nonzero(a_x_s > threshold):
+        src = i.item()
+        target = j.item() + len(G1)
+        weight = a_x_s[i, j].item()
+        plt.plot(
+            [combined_pos[src][0], combined_pos[target][0]],
+            [combined_pos[src][1], combined_pos[target][1]],
+            color="blue",
+            alpha=min(weight * 5, 1.0),
+            lw=weight * 2,
+        )
+
+    for i, j in torch.nonzero(a_y_s > threshold):
+        src = i.item() + len(G1)
+        target = j.item()
+        weight = a_y_s[i, j].item()
+        plt.plot(
+            [combined_pos[src][0], combined_pos[target][0]],
+            [combined_pos[src][1], combined_pos[target][1]],
+            color="red",
+            alpha=min(weight * 5, 1.0),
+            lw=weight * 2,
+        )
+
+    plt.axis("off")
     plt.show()
 
 
