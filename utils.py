@@ -330,7 +330,7 @@ def plot_graph_pair(data1, data2):
     plt.show()
 
 
-# def plot_graphs(edge_index, layer_clusters, graph1, graph2, title="", trainable=False):
+def plot_graphs(edge_index, layer_clusters, graph1, graph2, title="", trainable=False):
     num_rows = len(layer_clusters)
     fig, axes = plt.subplots(num_rows, 4, figsize=(32, num_rows * 8))
 
@@ -593,3 +593,59 @@ def visualize_graphs_with_attention(
 
     plt.axis("off")
     plt.show()
+
+
+def plot_all_classes(graphs, accs, title="Title", layers=3):
+    n = len(graphs)
+    # layers = 3
+    cols = n // layers
+    rows = layers
+
+    fig, axes = plt.subplots(rows, cols, figsize=(5 * cols, 5 * rows))
+    axes = axes.flatten()
+
+    fig.suptitle(title, fontsize=20, va="bottom", ha="center")
+
+    def draw_graph(ax, G, title, node_colors=None):
+        pos = nx.spring_layout(G)
+        if node_colors:
+            nx.draw(
+                G,
+                pos,
+                with_labels=True,
+                node_color=node_colors,
+                cmap=plt.get_cmap("viridis"),
+            )
+        else:
+            nx.draw(G, pos, ax=ax, with_labels=True)
+        ax.set_title(title)
+
+    for idx, graph in enumerate(graphs):
+        col = idx // rows
+        row = idx % rows
+        subplot_index = col + row * cols
+        plt.sca(axes[subplot_index])
+        supergraph = to_networkx(graph, to_undirected=True)
+        draw_graph(
+            axes[subplot_index], supergraph, f"Layer {row} (acc: {accs[idx]})", None
+        )
+
+    for col in range(1, cols):
+        x_position = col / cols
+        fig.patches.extend(
+            [
+                plt.Rectangle(
+                    (x_position - 0.001 / 2, 0),
+                    0.001,
+                    0.95 if col % 2 == 0 else 0.9,
+                    transform=fig.transFigure,
+                    color="black" if col % 2 == 0 else "grey",
+                )
+            ]
+        )
+
+    plt.tight_layout()
+    fig.subplots_adjust(top=0.9)
+    # plt.show()
+    plt.savefig(f"results/{title}.png", bbox_inches="tight")
+    plt.close()
