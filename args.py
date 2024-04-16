@@ -27,18 +27,18 @@ def parse_directory(directory_path):
     return parsed_files, parsed_files_list
 
 
-directory_path = "grey"
-parsed_data, parsed_files_list = parse_directory(directory_path)
-print(parsed_data)
-print("---")
-print(parsed_files_list)
+# directory_path = "grey"
+# parsed_data, parsed_files_list = parse_directory(directory_path)
+# print(parsed_data)
+# print("---")
+# print(parsed_files_list)
 
 grey = [
     (16, 3, 0.3, 0.0001, 64, 3000),
     (16, 5, 0.2, 0.01, 128, 500),
     (16, 7, 0.4, 0.0001, 64, 1000),
     (16, 7, 0.2, 0.0001, 128, 1000),
-    (16, 3, 0.3, 0.005, 64, 500, 2),
+    (16, 3, 0.3, 0.005, 64, 500),
     (16, 5, 0.5, 0.001, 64, 2000),
     (16, 7, 0.4, 0.001, 128, 3000),
     (16, 7, 0.4, 0.0001, 32, 2000),
@@ -194,5 +194,3 @@ purple = [
     (16, 7, 0.1, 0.0001, 32, 500),
     (16, 3, 0.2, 0.0001, 128, 1000),
 ]
-
-print(len(purple))

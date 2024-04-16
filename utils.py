@@ -9,7 +9,7 @@ from sklearn.cluster import DBSCAN, AgglomerativeClustering, KMeans, SpectralClu
 from sklearn.metrics import accuracy_score, f1_score, mutual_info_score
 from torch.nn import functional as F
 from torch_geometric.data import Batch, Data
-from torch_geometric.utils import to_networkx, to_undirected
+from torch_geometric.utils import degree, to_networkx, to_undirected
 from torch_scatter import scatter_mean
 
 
@@ -646,6 +646,53 @@ def plot_all_classes(graphs, accs, title="Title", layers=3):
 
     plt.tight_layout()
     fig.subplots_adjust(top=0.9)
-    # plt.show()
-    plt.savefig(f"results/{title}.png", bbox_inches="tight")
-    plt.close()
+    plt.show()
+    # plt.savefig(f"results/{title}.png", bbox_inches="tight")
+    # plt.close()
+
+
+def is_cycle(graph):
+    node_degrees = degree(graph.edge_index[0])
+    return torch.all(node_degrees == 2).item()
+
+
+def is_line(graph):
+    node_degrees = degree(graph.edge_index[0])
+    degree_one_count = (node_degrees == 1).sum().item()
+    return (
+        degree_one_count == 2
+        and torch.all((node_degrees == 1) | (node_degrees == 2)).item()
+    )
+
+
+def is_wheel(graph):
+    node_degrees = degree(graph.edge_index[0])
+    unique_degrees = torch.unique(node_degrees)
+    if len(unique_degrees) == 2:
+        high = torch.max(unique_degrees)
+        low = torch.min(unique_degrees)
+        return (
+            (node_degrees == low).sum().item() == 1
+            and low.item() == 3
+            and high.item() == (node_degrees.size(0) - 1)
+        )
+    return False
+
+
+def is_complete(graph):
+    node_degrees = degree(graph.edge_index[0])
+    expected_degree = graph.num_nodes - 1
+    return torch.all(node_degrees == expected_degree).item()
+
+
+def is_star(graph):
+    if graph.edge_index.size(1) == 0:
+        return False
+
+    node_degrees = degree(graph.edge_index[0], num_nodes=graph.num_nodes)
+    max_degree = torch.max(node_degrees).item()
+    degree_zero_count = (node_degrees == 0).sum().item()
+
+    return (max_degree == graph.num_nodes - 1 - degree_zero_count) and (
+        (node_degrees == 1).sum().item() == max_degree
+    )
