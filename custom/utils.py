@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 import networkx as nx
 import numpy as np
 import torch
-from sklearn.cluster import DBSCAN, AgglomerativeClustering, KMeans, SpectralClustering
+from sklearn.cluster import SpectralClustering
 from sklearn.metrics import accuracy_score, f1_score, mutual_info_score
 from torch.nn import functional as F
 from torch_geometric.data import Batch, Data
@@ -595,10 +595,14 @@ def visualize_graphs_with_attention(
     plt.show()
 
 
-def plot_all_classes(graphs, accs, title="Title", layers=3):
+def plot_graph(G):
+    nx.draw(G, with_labels=True)
+
+
+def plot_all_classes(graphs, accs, title="Title", layers=3, classes=4):
     n = len(graphs)
     # layers = 3
-    cols = n // layers
+    cols = 2 * classes
     rows = layers
 
     fig, axes = plt.subplots(rows, cols, figsize=(5 * cols, 5 * rows))

@@ -3,7 +3,6 @@ import networkx as nx
 import numpy as np
 import torch
 from torch_geometric.data import Data, Dataset
-from torch_geometric.loader import DataLoader
 from torch_geometric.nn.models import Node2Vec
 from torch_geometric.utils import to_networkx
 
@@ -184,7 +183,7 @@ class GraphDataset(Dataset):
 
     def __getitem__(self, idx):
         return self.data_list[idx]
-    
+
     def save(self, file_path):
         torch.save(self.data_list, file_path)
 
@@ -200,4 +199,3 @@ def create_dataset():
                     graphs.append(noisy_graph)
     updated_graphs = add_node2vec_features(graphs)
     return GraphDataset(updated_graphs)
-

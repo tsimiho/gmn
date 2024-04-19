@@ -4,8 +4,8 @@ from torch.nn import functional as F
 from torch_geometric.data import Data
 from torch_geometric.nn import TopKPooling
 
-from layers import GraphAggregator, GraphMatchingConvolution
-from utils import create_batch
+from .layers import GraphAggregator, GraphMatchingConvolution
+from .utils import create_batch
 
 
 class GraphMatchingNetwork(torch.nn.Module):
