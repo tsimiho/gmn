@@ -29,10 +29,8 @@ class GraphMatchingNetwork(torch.nn.Module):
         self.layer_outputs = []
         self.layer_cross_attentions = []
         self.mincut = []
-        self.mlp = torch.nn.Sequential()
         self.args.n_clusters = args.n_clusters
-        self.mlp.append(Linear(self.args.dim, self.args.n_clusters))
-        self.topk_pooling = TopKPooling(self.args.dim, ratio=8)
+        self.topk_pooling = TopKPooling(self.args.dim, ratio=self.args.n_clusters)
         self.topk_outputs = []
 
     def compute_emb(

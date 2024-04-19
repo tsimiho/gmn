@@ -595,8 +595,11 @@ def visualize_graphs_with_attention(
     plt.show()
 
 
-def plot_graph(G):
-    nx.draw(G, with_labels=True)
+def plot_graph(G, title=None):
+    nx.draw(to_networkx(G, to_undirected=True), with_labels=True)
+    if title:
+        plt.title(title)
+    plt.show()
 
 
 def plot_all_classes(graphs, accs, title="Title", layers=3, classes=4):
@@ -700,3 +703,11 @@ def is_star(graph):
     return (max_degree == graph.num_nodes - 1 - degree_zero_count) and (
         (node_degrees == 1).sum().item() == max_degree
     )
+
+
+def number_of_cycles(N, E, edges):
+    graph = [[] for i in range(N)]
+    for i in range(E):
+        graph[edges[i][0]].append(edges[i][1])
+        graph[edges[i][1]].append(edges[i][0])
+    return (E - N) + 1
