@@ -34,8 +34,19 @@ class GraphMatchingNetwork(torch.nn.Module):
         self.topk_outputs = []
 
     def compute_emb(
-        self, feats, edge_index, batch, sizes_1, sizes_2, edge_index_1, edge_index_2
+        self,
+        feats,
+        edge_index,
+        batch,
+        sizes_1,
+        sizes_2,
+        edge_index_1,
+        edge_index_2,
+        k=None,
     ):
+        topk_pooling = TopKPooling(
+            self.args.dim, ratio=k if k else self.args.n_clusters
+        )
         for i in range(self.args.num_layers):
             (
                 feats,
@@ -45,11 +56,11 @@ class GraphMatchingNetwork(torch.nn.Module):
             ) = self.layers[i](feats, edge_index, batch)
             x_1 = feats[: sizes_1.item(), :]
             x_2 = feats[sizes_1.item() : sizes_1.item() + sizes_2.item(), :]
-            x_pooled_1, edge_index_pooled_1, _, _, perm1, _ = self.topk_pooling(
+            x_pooled_1, edge_index_pooled_1, _, _, perm1, _ = topk_pooling(
                 x_1,
                 edge_index_1,
             )
-            x_pooled_2, edge_index_pooled_2, _, _, perm2, _ = self.topk_pooling(
+            x_pooled_2, edge_index_pooled_2, _, _, perm2, _ = topk_pooling(
                 x_2,
                 edge_index_2,
             )
@@ -80,7 +91,9 @@ class GraphMatchingNetwork(torch.nn.Module):
         )
         return feats, edge_index, batch
 
-    def forward(self, feats_1, edge_index_1, feats_2, edge_index_2, sizes_1, sizes_2):
+    def forward(
+        self, feats_1, edge_index_1, feats_2, edge_index_2, sizes_1, sizes_2, k=None
+    ):
         self.layer_outputs = []
         self.layer_cross_attentions = []
         self.topk_outputs = []
@@ -89,7 +102,7 @@ class GraphMatchingNetwork(torch.nn.Module):
             feats_1, edge_index_1, feats_2, edge_index_2, sizes_1, sizes_2
         )
         emb, _, _ = self.compute_emb(
-            feats, edge_index, batch, sizes_1, sizes_2, edge_index_1, edge_index_2
+            feats, edge_index, batch, sizes_1, sizes_2, edge_index_1, edge_index_2, k
         )
         emb_1 = emb[: emb.shape[0] // 2, :]
         emb_2 = emb[emb.shape[0] // 2 :, :]

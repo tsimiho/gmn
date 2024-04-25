@@ -164,7 +164,7 @@ def pyg_cluster(features, edge_index, node_clusters):
     return clustered_data
 
 
-def analyze_dataset(dataset):
+def analyze_dataset(dataset, min_num_nodes=None, max_num_nodes=None):
     num_graphs = len(dataset)
     num_classes = dataset.num_classes if hasattr(dataset, "num_classes") else None
     num_node_features = (
@@ -196,7 +196,11 @@ def analyze_dataset(dataset):
     for i in dataset:
         c = i.y
         class_name = "class_" + str(c.item())
-        classes[class_name].append(i)
+        if min_num_nodes and max_num_nodes:
+            if min_num_nodes <= i.num_nodes <= max_num_nodes:
+                classes[class_name].append(i)
+        else:
+            classes[class_name].append(i)
 
     print(f"Total number of graphs: {num_graphs}")
     if num_classes:
@@ -296,7 +300,7 @@ def nmi(y_true, y_pred):
     return nmi
 
 
-def plot_graph_pair(data1, data2):
+def plot_graph_pair(data1, data2, title):
     fig, axes = plt.subplots(1, 2, figsize=(10, 5))
 
     G1 = to_networkx(data1, to_undirected=True)
@@ -311,7 +315,7 @@ def plot_graph_pair(data1, data2):
         font_size=15,
         pos=nx.spring_layout(G1),
     )
-    axes[0].set_title("Graph 1")
+    axes[0].set_title("Original")
 
     G2 = to_networkx(data2, to_undirected=True)
     nx.draw(
@@ -324,8 +328,9 @@ def plot_graph_pair(data1, data2):
         font_size=15,
         pos=nx.spring_layout(G2),
     )
-    axes[1].set_title("Graph 2")
+    axes[1].set_title("Cluster")
 
+    plt.suptitle(title)
     plt.tight_layout()
     plt.show()
 
@@ -528,7 +533,7 @@ def normalize_attention(a_x_s):
 
 
 def visualize_graphs_with_attention(
-    graph1, graph2, a_x_s, a_y_s, threshold=0.9, topk=None
+    graph1, graph2, a_x_s, a_y_s, threshold=0.9, topk=None, title=None
 ):
     G1 = to_networkx(graph1, to_undirected=True)
     G2 = to_networkx(graph2, to_undirected=True)
@@ -591,6 +596,8 @@ def visualize_graphs_with_attention(
             lw=weight * 2,
         )
 
+    if title:
+        plt.title(title)
     plt.axis("off")
     plt.show()
 

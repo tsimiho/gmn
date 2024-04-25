@@ -115,10 +115,6 @@ nodes = [1, 2, 3]
 edges = [2, 3, 4]
 
 
-import torch
-from torch_geometric.nn import Node2Vec
-
-
 def add_node2vec_features(
     data_list,
     embedding_dim=32,
