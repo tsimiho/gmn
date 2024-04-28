@@ -47,6 +47,9 @@ class GraphMatchingNetwork(torch.nn.Module):
         topk_pooling = TopKPooling(
             self.args.dim, ratio=k if k else self.args.n_clusters
         )
+        original_x_1 = feats[: sizes_1.item(), :]
+        original_x_2 = feats[sizes_1.item() : sizes_1.item() + sizes_2.item(), :]
+
         for i in range(self.args.num_layers):
             (
                 feats,
@@ -64,10 +67,14 @@ class GraphMatchingNetwork(torch.nn.Module):
                 x_2,
                 edge_index_2,
             )
+
+            x_pooled_perm_1 = original_x_1[perm1]
+            x_pooled_perm_2 = original_x_2[perm2]
+
             self.topk_outputs.append(
                 (
-                    (x_pooled_1, edge_index_pooled_1, perm1),
-                    (x_pooled_2, edge_index_pooled_2, perm2),
+                    (x_pooled_1, edge_index_pooled_1, perm1, x_pooled_perm_1),
+                    (x_pooled_2, edge_index_pooled_2, perm2, x_pooled_perm_2),
                 )
             )
             self.layer_cross_attentions.append((cross_graph_attention, a_x, a_y))
