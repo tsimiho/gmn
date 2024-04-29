@@ -718,3 +718,183 @@ def number_of_cycles(N, E, edges):
         graph[edges[i][0]].append(edges[i][1])
         graph[edges[i][1]].append(edges[i][0])
     return (E - N) + 1
+
+
+def norm_barplot(model, i=0):
+    norms_first_graph = [
+        norms_tuple[i].detach().numpy() for norms_tuple in model.norms_per_layer
+    ]
+
+    num_layers = len(norms_first_graph)
+    max_nodes = max(len(norms) for norms in norms_first_graph)
+
+    fig, ax = plt.subplots(figsize=(12, 8))
+
+    bar_width = 0.8 / max_nodes
+
+    for node_idx in range(max_nodes):
+        node_norms = [
+            layer[node_idx] if node_idx < len(layer) else 0
+            for layer in norms_first_graph
+        ]
+
+        x_positions = np.arange(num_layers) + bar_width * node_idx
+
+        ax.bar(
+            x_positions,
+            node_norms,
+            bar_width,
+            label=f"Node {node_idx + 1}" if node_idx == 0 else "",
+        )
+
+    ax.set_xlabel("Layer")
+    ax.set_ylabel("Norms of Node Features")
+    ax.set_title(f"Norms of Node Features for Each Node by Layer - Graph {i+1}")
+    ax.set_xticks(np.arange(num_layers) + bar_width * max_nodes / 2)
+    ax.set_xticklabels([f"Layer {layer_idx + 1}" for layer_idx in range(num_layers)])
+
+    plt.tight_layout()
+    plt.show()
+
+
+def cross_barplot(model, i=0):
+    norms_first_graph = [
+        norms_tuple[i].detach().numpy()
+        for norms_tuple in model.attention_sums_per_layer
+    ]
+
+    num_layers = len(norms_first_graph)
+    max_nodes = max(len(norms) for norms in norms_first_graph)
+
+    fig, ax = plt.subplots(figsize=(12, 8))
+
+    bar_width = 0.8 / max_nodes
+
+    for node_idx in range(max_nodes):
+        node_norms = [
+            layer[node_idx] if node_idx < len(layer) else 0
+            for layer in norms_first_graph
+        ]
+
+        x_positions = np.arange(num_layers) + bar_width * node_idx
+
+        ax.bar(
+            x_positions,
+            node_norms,
+            bar_width,
+            label=f"Node {node_idx + 1}" if node_idx == 0 else "",
+        )
+
+    ax.set_xlabel("Layer")
+    ax.set_ylabel("Norms of Node Features")
+    ax.set_title(f"Norms of Node Features for Each Node by Layer - Graph {i+1}")
+    ax.set_xticks(np.arange(num_layers) + bar_width * max_nodes / 2)
+    ax.set_xticklabels([f"Layer {layer_idx + 1}" for layer_idx in range(num_layers)])
+
+    plt.tight_layout()
+    plt.show()
+
+
+def plot_layer_barplot(class0, class1, class2, class3, n):
+    counts0 = [class0.count(i) for i in range(1, n + 1)]
+    counts1 = [class1.count(i) for i in range(1, n + 1)]
+    counts2 = [class2.count(i) for i in range(1, n + 1)]
+    counts3 = [class3.count(i) for i in range(1, n + 1)]
+
+    fig, ax = plt.subplots(figsize=(15, 8))
+
+    bar_width = 0.15
+
+    indices = np.arange(1, n + 1)
+
+    bars0 = ax.bar(indices - 1.5 * bar_width, counts0, width=bar_width, label="Class 0")
+    bars1 = ax.bar(indices - 0.5 * bar_width, counts1, width=bar_width, label="Class 1")
+    bars2 = ax.bar(indices + 0.5 * bar_width, counts2, width=bar_width, label="Class 2")
+    bars3 = ax.bar(indices + 1.5 * bar_width, counts3, width=bar_width, label="Class 3")
+
+    ax.set_xlabel("Number", fontsize=14)
+    ax.set_ylabel("Frequency", fontsize=14)
+    ax.set_title("Frequency of Numbers by Class", fontsize=16)
+
+    ax.set_xticks(indices)
+    ax.set_xticklabels([str(i) for i in indices])
+
+    ax.legend()
+
+    def add_value_labels(bars):
+        for bar in bars:
+            height = bar.get_height()
+            ax.annotate(
+                f"{height}",
+                xy=(bar.get_x() + bar.get_width() / 2, height),
+                xytext=(0, 3),
+                textcoords="offset points",
+                ha="center",
+                va="bottom",
+            )
+
+    add_value_labels(bars0)
+    add_value_labels(bars1)
+    add_value_labels(bars2)
+    add_value_labels(bars3)
+
+    plt.tight_layout()
+    plt.show()
+
+
+def best_k(model, threshold=0.8):
+    def calculate_cumulative_scores(scores):
+        normalized_scores = F.softmax(scores, dim=0)
+        cumulative_scores = torch.cumsum(normalized_scores, dim=0)
+        return cumulative_scores
+
+    def calculate_confidence(cumulative_scores, k):
+        gradients = np.gradient(cumulative_scores.detach().numpy())
+        confidence = gradients[k - 1]
+        return confidence
+
+    def find_best_k_and_confidence(cumulative_scores, total_percentage):
+        k = ((cumulative_scores / cumulative_scores[-1]) >= total_percentage).nonzero()[
+            0
+        ].item() + 1
+        confidence = calculate_confidence(cumulative_scores, k)
+        return k, confidence
+
+    layer_scores_1 = []
+    layer_scores_2 = []
+    for i in range(len(model.topk_outputs)):
+        (
+            (_, _, _, score1),
+            (_, _, _, score2),
+        ) = model.topk_outputs[i]
+        layer_scores_1.append(score1)
+        layer_scores_2.append(score2)
+
+    k_values_graph1 = []
+    confidences_graph1 = []
+    for i, scores in enumerate(layer_scores_1):
+        cumulative_scores = calculate_cumulative_scores(scores)
+        best_k, confidence = find_best_k_and_confidence(cumulative_scores, threshold)
+        k_values_graph1.append(best_k)
+        confidences_graph1.append(confidence)
+
+    k_values_graph2 = []
+    confidences_graph2 = []
+    for i, scores in enumerate(layer_scores_2):
+        cumulative_scores = calculate_cumulative_scores(scores)
+        best_k, confidence = find_best_k_and_confidence(cumulative_scores, threshold)
+        k_values_graph1.append(best_k)
+        confidences_graph1.append(confidence)
+
+    def calculate_weighted_average(ks, confidences):
+        normalized_confidences = [float(i) / sum(confidences) for i in confidences]
+        weighted_ks = sum(k * w for k, w in zip(ks, normalized_confidences))
+        return int(round(weighted_ks))
+
+    combined_ks = k_values_graph1 + k_values_graph2
+    combined_confidences = confidences_graph1 + confidences_graph2
+
+    overall_k_confidence = calculate_weighted_average(combined_ks, combined_confidences)
+    overall_k_median = int(np.median(combined_ks))
+
+    return overall_k_confidence, overall_k_median
