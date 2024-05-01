@@ -300,7 +300,7 @@ def nmi(y_true, y_pred):
     return nmi
 
 
-def plot_graph_pair(data1, data2, title):
+def plot_graph_pair(data1, data2, title=""):
     fig, axes = plt.subplots(1, 2, figsize=(10, 5))
 
     G1 = to_networkx(data1, to_undirected=True)
@@ -603,7 +603,15 @@ def visualize_graphs_with_attention(
 
 
 def plot_graph(G, title=None):
-    nx.draw(to_networkx(G, to_undirected=True), with_labels=True)
+    nx.draw(
+        to_networkx(G, to_undirected=True),
+        with_labels=False,
+        node_color="skyblue",
+        node_size=500,
+        edge_color="k",
+        linewidths=2,
+        font_size=15,
+    )
     if title:
         plt.title(title)
     plt.show()
@@ -842,7 +850,7 @@ def plot_layer_barplot(class0, class1, class2, class3, n):
     plt.show()
 
 
-def best_k(model, threshold=0.8):
+def best_k(combined_scores, threshold=0.8):
     def calculate_cumulative_scores(scores):
         normalized_scores = F.softmax(scores, dim=0)
         cumulative_scores = torch.cumsum(normalized_scores, dim=0)
@@ -862,13 +870,13 @@ def best_k(model, threshold=0.8):
 
     layer_scores_1 = []
     layer_scores_2 = []
-    for i in range(len(model.topk_outputs)):
-        (
-            (_, _, _, score1),
-            (_, _, _, score2),
-        ) = model.topk_outputs[i]
+    for i in range(len(combined_scores)):
+        score1, score2 = combined_scores[i]
         layer_scores_1.append(score1)
         layer_scores_2.append(score2)
+
+    print(layer_scores_1)
+    print(layer_scores_2)
 
     k_values_graph1 = []
     confidences_graph1 = []
@@ -883,8 +891,8 @@ def best_k(model, threshold=0.8):
     for i, scores in enumerate(layer_scores_2):
         cumulative_scores = calculate_cumulative_scores(scores)
         best_k, confidence = find_best_k_and_confidence(cumulative_scores, threshold)
-        k_values_graph1.append(best_k)
-        confidences_graph1.append(confidence)
+        k_values_graph2.append(best_k)
+        confidences_graph2.append(confidence)
 
     def calculate_weighted_average(ks, confidences):
         normalized_confidences = [float(i) / sum(confidences) for i in confidences]
@@ -894,7 +902,19 @@ def best_k(model, threshold=0.8):
     combined_ks = k_values_graph1 + k_values_graph2
     combined_confidences = confidences_graph1 + confidences_graph2
 
-    overall_k_confidence = calculate_weighted_average(combined_ks, combined_confidences)
-    overall_k_median = int(np.median(combined_ks))
+    print(combined_ks)
 
-    return overall_k_confidence, overall_k_median
+    k = calculate_weighted_average(combined_ks, combined_confidences)
+
+    return k
+
+
+def calculate_entropy(scores):
+    probabilities = F.softmax(scores, dim=0)
+    log_probabilities = torch.log(probabilities + 1e-10)
+    entropy = -torch.sum(probabilities * log_probabilities)
+    return entropy.item()
+
+
+def to_nx(x, edge_idx):
+    return to_networkx(Data(x=x, edge_index=edge_idx), to_undirected=True)
