@@ -300,7 +300,7 @@ def nmi(y_true, y_pred):
     return nmi
 
 
-def plot_graph_pair(data1, data2, title=""):
+def plot_graph_pair(data1, data2, title1="", title2="", title=""):
     fig, axes = plt.subplots(1, 2, figsize=(10, 5))
 
     G1 = to_networkx(data1, to_undirected=True)
@@ -315,7 +315,7 @@ def plot_graph_pair(data1, data2, title=""):
         font_size=15,
         pos=nx.spring_layout(G1),
     )
-    axes[0].set_title("Original")
+    axes[0].set_title(title1)
 
     G2 = to_networkx(data2, to_undirected=True)
     nx.draw(
@@ -328,7 +328,7 @@ def plot_graph_pair(data1, data2, title=""):
         font_size=15,
         pos=nx.spring_layout(G2),
     )
-    axes[1].set_title("Cluster")
+    axes[1].set_title(title2)
 
     plt.suptitle(title)
     plt.tight_layout()
