@@ -103,9 +103,7 @@ def batch_block_pair_attention(data, batch, n_graphs):
 
     result_x = torch.cat(all_attention_x, dim=0)
     result_y = torch.cat(all_attention_y, dim=0)
-    # result_a_i = torch.cat(all_a_i, dim=0) if len(all_a_i) > 0 else torch.Tensor()
-    # result_a_j = torch.cat(all_a_j, dim=0) if len(all_a_j) > 0 else torch.Tensor()
-
+    
     result = torch.cat([result_x, result_y], dim=0)
 
     return result, all_a_i, all_a_j
