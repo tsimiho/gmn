@@ -103,7 +103,7 @@ def batch_block_pair_attention(data, batch, n_graphs):
 
     result_x = torch.cat(all_attention_x, dim=0)
     result_y = torch.cat(all_attention_y, dim=0)
-    
+
     result = torch.cat([result_x, result_y], dim=0)
 
     return result, all_a_i, all_a_j
@@ -175,7 +175,7 @@ def analyze_dataset(dataset, min_num_nodes=None, max_num_nodes=None):
     min_nodes = min(num_nodes)
     max_nodes = max(num_nodes)
 
-    small_threshold = 30
+    small_threshold = 20
     large_threshold = 60
 
     small_graphs = []
@@ -183,6 +183,33 @@ def analyze_dataset(dataset, min_num_nodes=None, max_num_nodes=None):
     large_graphs = []
 
     classes = {
+        "class_0": [],
+        "class_1": [],
+        "class_2": [],
+        "class_3": [],
+        "class_4": [],
+        "class_5": [],
+    }
+
+    small_classes = {
+        "class_0": [],
+        "class_1": [],
+        "class_2": [],
+        "class_3": [],
+        "class_4": [],
+        "class_5": [],
+    }
+
+    medium_classes = {
+        "class_0": [],
+        "class_1": [],
+        "class_2": [],
+        "class_3": [],
+        "class_4": [],
+        "class_5": [],
+    }
+
+    large_classes = {
         "class_0": [],
         "class_1": [],
         "class_2": [],
@@ -222,18 +249,31 @@ def analyze_dataset(dataset, min_num_nodes=None, max_num_nodes=None):
     plt.show()
 
     for graph in dataset:
+        c = graph.y
+        class_name = "class_" + str(c.item())
         if graph.num_nodes < small_threshold:
             small_graphs.append(graph)
+            small_classes[class_name].append(graph)
         elif graph.num_nodes > large_threshold:
             large_graphs.append(graph)
+            large_classes[class_name].append(graph)
         else:
             medium_graphs.append(graph)
+            medium_classes[class_name].append(graph)
 
     print(f"Small graphs: {len(small_graphs)}")
     print(f"Medium graphs: {len(medium_graphs)}")
     print(f"Large graphs: {len(large_graphs)}")
 
-    return small_graphs, medium_graphs, large_graphs, classes
+    return (
+        small_graphs,
+        medium_graphs,
+        large_graphs,
+        classes,
+        small_classes,
+        medium_classes,
+        large_classes,
+    )
 
 
 def create_graph_pairs(dataset, num_pairs):
@@ -916,3 +956,180 @@ def calculate_entropy(scores):
 
 def to_nx(x, edge_idx):
     return to_networkx(Data(x=x, edge_index=edge_idx), to_undirected=True)
+
+
+def plot_mutag(
+    graph1, graph2=None, original_x1=None, perm1=None, original_x2=None, perm2=None
+):
+    import matplotlib
+    import matplotlib.patches as mpatches
+
+    colormap = matplotlib.colormaps.get_cmap("Pastel1")
+
+    color_map = {
+        0: colormap(0),
+        1: colormap(1),
+        2: colormap(2),
+        3: colormap(3),
+        4: colormap(4),
+        5: colormap(5),
+        6: colormap(6),
+        "other": colormap(7),
+    }
+
+    def plot_single_graph(graph, ax, original_x=None, perm=None):
+        G = to_networkx(graph, to_undirected=True)
+
+        node_colors = []
+        node_labels = {}
+
+        if original_x is not None and perm is not None:
+            mapped_x = original_x[perm[: graph.num_nodes]]
+            for node in range(graph.num_nodes):
+                one_hot = mapped_x[node].tolist()
+                try:
+                    node_type = one_hot.index(1)
+                except ValueError:
+                    node_type = "other"
+                node_colors.append(color_map[node_type])
+                node_labels[node] = perm[node].item()
+        else:
+            for node in range(graph.num_nodes):
+                one_hot = graph.x[node].tolist()
+                try:
+                    node_type = one_hot.index(1)
+                except ValueError:
+                    node_type = "other"
+                node_colors.append(color_map[node_type])
+                node_labels[node] = perm[node].item() if (perm is not None) else node
+
+        pos = nx.spring_layout(G)
+        nx.draw(
+            G,
+            pos,
+            node_color=node_colors,
+            with_labels=True,
+            labels=node_labels,
+            node_size=500,
+            font_weight="bold",
+            ax=ax,
+        )
+
+    legend_handles = [
+        mpatches.Patch(color=colormap(0), label="C"),
+        mpatches.Patch(color=colormap(1), label="N"),
+        mpatches.Patch(color=colormap(2), label="O"),
+        mpatches.Patch(color=colormap(3), label="F"),
+        mpatches.Patch(color=colormap(4), label="I"),
+        mpatches.Patch(color=colormap(5), label="Cl"),
+        mpatches.Patch(color=colormap(6), label="Br"),
+        mpatches.Patch(color=colormap(7), label="-"),
+    ]
+
+    if graph2 is None:
+        fig, ax = plt.subplots()
+        plot_single_graph(graph1, ax, original_x1, perm1)
+        fig.legend(handles=legend_handles, loc="lower left", title="Node Types")
+    else:
+        fig, axes = plt.subplots(1, 2, figsize=(12, 6))
+        plot_single_graph(graph1, axes[0], original_x1, perm1)
+        plot_single_graph(graph2, axes[1], original_x2, perm2)
+        axes[0].set_title("Graph 1")
+        axes[1].set_title("Graph 2")
+        fig.legend(handles=legend_handles, loc="lower left", title="Node Types")
+
+    plt.show()
+
+
+import matplotlib
+import matplotlib.patches as mpatches
+import matplotlib.pyplot as plt
+import networkx as nx
+from torch_geometric.utils import to_networkx
+
+
+def plot_mutag_summary(
+    graph1, graph2=None, original_x1=None, perm1=None, original_x2=None, perm2=None
+):
+    colormap = matplotlib.colormaps.get_cmap("Pastel1")
+
+    color_map = {
+        0: colormap(0),
+        1: colormap(1),
+        2: colormap(2),
+        3: colormap(3),
+        4: colormap(4),
+        5: colormap(5),
+        6: colormap(6),
+        "other": colormap(7),
+    }
+
+    def plot_single_graph(graph, ax, original_x=None, perm=None, summary_ids=None):
+        G = to_networkx(graph, to_undirected=True)
+
+        node_colors = []
+        node_labels = {}
+
+        if original_x is not None and perm is not None:
+            mapped_x = original_x[perm[: graph.num_nodes]]
+            for node in range(graph.num_nodes):
+                one_hot = mapped_x[node].tolist()
+                try:
+                    node_type = one_hot.index(1)
+                except ValueError:
+                    node_type = "other"
+                node_colors.append(color_map[node_type])
+                node_labels[node] = perm[node].item()
+        else:
+            for node in range(graph.num_nodes):
+                one_hot = graph.x[node].tolist()
+                try:
+                    node_type = one_hot.index(1)
+                except ValueError:
+                    node_type = "other"
+                node_colors.append(color_map[node_type])
+                if summary_ids and node < len(summary_ids):
+                    node_labels[node] = summary_ids[node]
+                else:
+                    node_labels[node] = (
+                        perm[node].item() if (perm is not None) else node
+                    )
+
+        pos = nx.spring_layout(G)
+        nx.draw(
+            G,
+            pos,
+            node_color=node_colors,
+            with_labels=True,
+            labels=node_labels,
+            node_size=500,
+            font_weight="bold",
+            ax=ax,
+        )
+
+    legend_handles = [
+        mpatches.Patch(color=colormap(0), label="C"),
+        mpatches.Patch(color=colormap(1), label="N"),
+        mpatches.Patch(color=colormap(2), label="O"),
+        mpatches.Patch(color=colormap(3), label="F"),
+        mpatches.Patch(color=colormap(4), label="I"),
+        mpatches.Patch(color=colormap(5), label="Cl"),
+        mpatches.Patch(color=colormap(6), label="Br"),
+        mpatches.Patch(color=colormap(7), label="-"),
+    ]
+
+    if graph2 is None:
+        fig, ax = plt.subplots()
+        plot_single_graph(graph1, ax, original_x1, perm1)
+        fig.legend(handles=legend_handles, loc="lower left", title="Node Types")
+    else:
+        fig, axes = plt.subplots(1, 2, figsize=(12, 6))
+        plot_single_graph(graph1, axes[0], original_x1, perm1)
+        plot_single_graph(
+            graph2, axes[1], original_x2, perm2, summary_ids=graph2.summary_ids
+        )
+        axes[0].set_title("Graph 1")
+        axes[1].set_title("Graph 2")
+        fig.legend(handles=legend_handles, loc="lower left", title="Node Types")
+
+    plt.show()
