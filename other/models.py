@@ -7,16 +7,21 @@ import torch
 import torch.nn.functional as F
 import torch_geometric
 import torch_geometric.transforms as T
-from torch.nn import Linear
+from torch.nn import Linear, LogSoftmax, ReLU
 from torch_geometric import utils
 from torch_geometric.data import Data
 from torch_geometric.datasets import Planetoid
 from torch_geometric.nn import (
+    BatchNorm,
     DMoNPooling,
+    GATConv,
     GCNConv,
     GraphConv,
+    MessagePassing,
     Sequential,
+    TopKPooling,
     dense_mincut_pool,
+    global_mean_pool,
 )
 from torch_geometric.nn.conv.gcn_conv import gcn_norm
 
@@ -219,3 +224,115 @@ class MinCut(torch.nn.Module):
         loss = mc_loss + o_loss
 
         return torch.softmax(s, dim=-1), loss
+
+
+class GNN(torch.nn.Module):
+    def __init__(self, mp_units, mp_act, in_channels, num_classes):
+        super().__init__()
+        self.name = "GNN"
+
+        mp_act = getattr(torch.nn, mp_act)(inplace=True)
+
+        mp = [
+            (
+                GCNConv(in_channels, mp_units[0], normalize=False, cached=False),
+                "x, edge_index -> x",
+            ),
+            mp_act,
+        ]
+        for i in range(len(mp_units) - 1):
+            mp.append(
+                (
+                    GCNConv(
+                        mp_units[i], mp_units[i + 1], normalize=False, cached=False
+                    ),
+                    "x, edge_index -> x",
+                )
+            )
+            mp.append(mp_act)
+
+        self.mp = Sequential("x, edge_index", mp)
+
+        out_chan = mp_units[-1]
+        self.fc1 = Linear(out_chan, 32)
+        self.fc2 = Linear(32, num_classes)
+        self.relu = ReLU(inplace=True)
+        self.log_softmax = LogSoftmax(dim=-1)
+
+    def forward(self, data):
+        x, edge_index = data.x, data.edge_index
+        x = self.mp(x, edge_index)
+
+        batch = data.batch
+        x = torch_geometric.nn.global_mean_pool(x, batch)
+
+        x = self.relu(self.fc1(x))
+        x = self.fc2(x)
+
+        return self.log_softmax(x)
+
+
+import torch
+from torch.nn import Dropout, Linear, LogSoftmax, ReLU
+from torch_geometric.nn import GATConv, Sequential, global_mean_pool
+
+
+class AdjustedGATModel(torch.nn.Module):
+    def __init__(self, args):
+        super().__init__()
+        self.name = "AdjustedGATModel"
+        self.node_features_list = []
+        self.args = args
+
+        mp_act = ReLU(inplace=True)
+
+        mp = [
+            (
+                GATConv(args.feat_dim, args.dim, heads=4, concat=True),
+                "x, edge_index -> x",
+            ),
+            mp_act,
+            Dropout(0.5),
+        ]
+        for _ in range(args.num_layers - 1):
+            mp.append(
+                (
+                    GATConv(args.dim * 4, args.dim, heads=4, concat=True),
+                    "x, edge_index -> x",
+                )
+            )
+            mp.append(mp_act)
+            mp.append(Dropout(0.5))
+
+        self.mp = Sequential("x, edge_index", mp)
+
+        out_chan = args.dim * 4
+        self.fc = Linear(out_chan, args.n_classes)
+        self.log_softmax = LogSoftmax(dim=-1)
+        self.topk_outputs = []
+        self.topk_pooling = TopKPooling(4 * self.args.dim, ratio=0.99)
+
+    def forward(self, data):
+        x, edge_index = data.x, data.edge_index
+        self.node_features_list = []
+        self.topk_outputs = []
+
+        for layer in self.mp:
+            if isinstance(layer, GATConv):
+                x = layer(x, edge_index)
+                self.node_features_list.append(x.clone())
+
+                _, _, _, _, _, score = self.topk_pooling(
+                    x,
+                    edge_index,
+                )
+                self.topk_outputs.append(score)
+            else:
+                x = layer(x)
+
+        batch = data.batch
+        x = global_mean_pool(x, batch)
+
+        x = self.fc(x)
+
+        return self.log_softmax(x)
