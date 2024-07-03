@@ -346,7 +346,7 @@ def plot_graph_pair(data1, data2, title1="", title2="", title=""):
         G1,
         ax=axes[0],
         with_labels=False,
-        node_color="skyblue",
+        node_color="#3b8bc2",
         node_size=500,
         edge_color="k",
         linewidths=2,
@@ -360,7 +360,7 @@ def plot_graph_pair(data1, data2, title1="", title2="", title=""):
         G2,
         ax=axes[1],
         with_labels=False,
-        node_color="skyblue",
+        node_color="#3b8bc2",
         edge_color="k",
         linewidths=2,
         font_size=15,
@@ -644,7 +644,7 @@ def plot_graph(G, title=None):
     nx.draw(
         to_networkx(G, to_undirected=True),
         with_labels=False,
-        node_color="skyblue",
+        node_color="#3b8bc2",
         node_size=500,
         edge_color="k",
         linewidths=2,
@@ -1133,3 +1133,298 @@ def plot_mutag_summary(
         fig.legend(handles=legend_handles, loc="lower left", title="Node Types")
 
     plt.show()
+
+
+def plot_attentions_mutag(graph1, graph2, attention_pairs, title=""):
+    colormap = matplotlib.colormaps.get_cmap("Pastel1")
+    color_map = {
+        0: colormap(0),
+        1: colormap(1),
+        2: colormap(2),
+        3: colormap(3),
+        4: colormap(4),
+        5: colormap(5),
+        6: colormap(6),
+        "other": colormap(7),
+    }
+
+    def get_node_colors(graph):
+        node_colors = []
+        for node in range(graph.num_nodes):
+            one_hot = graph.x[node].tolist()
+            try:
+                node_type = one_hot.index(1)
+            except ValueError:
+                node_type = "other"
+            node_colors.append(color_map[node_type])
+        return node_colors
+
+    def get_node_labels(graph):
+        node_labels = {}
+        for node in range(graph.num_nodes):
+            node_labels[node] = node
+        return node_labels
+
+    G1 = to_networkx(graph1, to_undirected=True)
+    G2 = to_networkx(graph2, to_undirected=True)
+
+    G_combined = nx.Graph()
+
+    for n, d in G1.nodes(data=True):
+        G_combined.add_node(n, **d)
+    for n, d in G2.nodes(data=True):
+        G_combined.add_node(n + len(G1.nodes), **d)
+
+    G_combined.add_edges_from([(u, v) for u, v in G1.edges()])
+    G_combined.add_edges_from(
+        [(u + len(G1.nodes), v + len(G1.nodes)) for u, v in G2.edges()]
+    )
+
+    for node1, node2 in attention_pairs:
+        G_combined.add_edge(node1, node2 + len(G1.nodes))
+
+    pos_G1 = nx.spring_layout(G1)
+    pos_G2 = nx.spring_layout(G2)
+
+    for key in pos_G1.keys():
+        pos_G1[key] = [pos_G1[key][0] - 1.5, pos_G1[key][1]]
+
+    for key in pos_G2.keys():
+        pos_G2[key] = [pos_G2[key][0] + 1.5, pos_G2[key][1]]
+
+    pos_combined = {**pos_G1, **{k + len(G1.nodes): v for k, v in pos_G2.items()}}
+
+    node_colors_G1 = get_node_colors(graph1)
+    node_colors_G2 = get_node_colors(graph2)
+    node_colors_combined = node_colors_G1 + node_colors_G2
+
+    node_labels_G1 = get_node_labels(graph1)
+    node_labels_G2 = get_node_labels(graph2)
+    node_labels_combined = {
+        **node_labels_G1,
+        **{k + len(G1.nodes): v for k, v in node_labels_G2.items()},
+    }
+
+    assert len(node_colors_combined) == len(
+        G_combined.nodes
+    ), "Number of node colors must match the number of nodes in the combined graph."
+
+    plt.figure(figsize=(12, 8))
+    nx.draw(
+        G_combined,
+        pos=pos_combined,
+        with_labels=True,
+        labels=node_labels_combined,
+        node_color=node_colors_combined,
+        edge_color="black",
+        node_size=500,
+    )
+
+    attention_edges = [
+        (node1, node2 + len(G1.nodes)) for node1, node2 in attention_pairs
+    ]
+    nx.draw_networkx_edges(
+        G_combined,
+        pos=pos_combined,
+        edgelist=attention_edges,
+        edge_color="lightgrey",
+    )
+
+    plt.title(title)
+    plt.show()
+
+
+def plot_attentions(graph1, graph2, attention_pairs, title=""):
+
+    def get_node_labels(graph):
+        node_labels = {}
+        for node in range(graph.num_nodes):
+            node_labels[node] = node
+        return node_labels
+
+    G1 = to_networkx(graph1, to_undirected=True)
+    G2 = to_networkx(graph2, to_undirected=True)
+
+    G_combined = nx.Graph()
+
+    for n, d in G1.nodes(data=True):
+        G_combined.add_node(n, **d)
+    for n, d in G2.nodes(data=True):
+        G_combined.add_node(n + len(G1.nodes), **d)
+
+    G_combined.add_edges_from([(u, v) for u, v in G1.edges()])
+    G_combined.add_edges_from(
+        [(u + len(G1.nodes), v + len(G1.nodes)) for u, v in G2.edges()]
+    )
+
+    for node1, node2 in attention_pairs:
+        G_combined.add_edge(node1, node2 + len(G1.nodes))
+
+    pos_G1 = nx.spring_layout(G1)
+    pos_G2 = nx.spring_layout(G2)
+
+    for key in pos_G1.keys():
+        pos_G1[key] = [pos_G1[key][0] - 1.5, pos_G1[key][1]]
+
+    for key in pos_G2.keys():
+        pos_G2[key] = [pos_G2[key][0] + 1.5, pos_G2[key][1]]
+
+    pos_combined = {**pos_G1, **{k + len(G1.nodes): v for k, v in pos_G2.items()}}
+
+    node_labels_G1 = get_node_labels(graph1)
+    node_labels_G2 = get_node_labels(graph2)
+    node_labels_combined = {
+        **node_labels_G1,
+        **{k + len(G1.nodes): v for k, v in node_labels_G2.items()},
+    }
+
+    plt.figure(figsize=(12, 8))
+    nx.draw(
+        G_combined,
+        pos=pos_combined,
+        with_labels=True,
+        labels=node_labels_combined,
+        node_color="#3b8bc2",
+        edge_color="black",
+        node_size=500,
+    )
+
+    attention_edges = [
+        (node1, node2 + len(G1.nodes)) for node1, node2 in attention_pairs
+    ]
+    nx.draw_networkx_edges(
+        G_combined,
+        pos=pos_combined,
+        edgelist=attention_edges,
+        edge_color="lightgrey",
+    )
+
+    plt.title(title)
+    plt.show()
+
+
+def mutual_pairs(attention_nodes, i=0):
+    outer_layer = attention_nodes[i]
+    g1_attention, g2_attention = outer_layer
+
+    mutual_pairs = []
+
+    for g1_node, g1_attends in enumerate(g1_attention):
+        for g2_node in g1_attends:
+            if g1_node in g2_attention[g2_node]:
+                pair = (g1_node, g2_node)
+                if pair not in mutual_pairs:
+                    mutual_pairs.append(pair)
+
+    random.shuffle(mutual_pairs)
+    return mutual_pairs
+
+
+def extract_embeddings_and_attention(
+    model, feats_1, edge_index_1, feats_2, edge_index_2, sizes_1, sizes_2
+):
+    model(feats_1, edge_index_1, feats_2, edge_index_2, sizes_1, sizes_2)
+    embeddings = model.layer_outputs
+    attentions = model.layer_cross_attentions
+    return embeddings, attentions
+
+
+def extract_dynamic_attention_nodes(attentions, threshold=0.1):
+    attention_nodes = []
+    softmax = torch.nn.Softmax(dim=1)
+
+    for layer_idx, (cross_graph_attention, a_x, a_y) in enumerate(attentions):
+        dynamic_attention_nodes_1_to_2 = []
+        dynamic_attention_nodes_2_to_1 = []
+
+        a_x = a_x[0]
+        a_y = a_y[0]
+
+        assert a_x.shape[0] == a_y.shape[0]
+        assert a_x.shape[1] == a_y.shape[1]
+
+        # # Apply softmax normalization
+        # a_x = softmax(a_x)
+        # a_y = softmax(a_y.T).T
+
+        for i, x_attention in enumerate(a_x):
+            strong_attention_indices = (x_attention > threshold).nonzero(as_tuple=True)[
+                0
+            ]
+            dynamic_attention_nodes_1_to_2.append(strong_attention_indices.tolist())
+
+        for j, y_attention in enumerate(a_y.T):
+            strong_attention_indices = (y_attention > threshold).nonzero(as_tuple=True)[
+                0
+            ]
+            dynamic_attention_nodes_2_to_1.append(strong_attention_indices.tolist())
+
+        attention_nodes.append(
+            (dynamic_attention_nodes_1_to_2, dynamic_attention_nodes_2_to_1)
+        )
+
+    for i in range(len(attention_nodes)):
+        for j in range(i):
+            if attention_nodes[i] == attention_nodes[j]:
+                for k in range(len(attention_nodes[i][0])):
+                    attention_nodes[i][0][k] = []
+                for k in range(len(attention_nodes[i][1])):
+                    attention_nodes[i][1][k] = []
+                break
+
+    return attention_nodes
+
+
+def create_subgraphs(pattern, graph1, graph2):
+    def remove_duplicate_edges(edge_index):
+        unique_edges = set()
+
+        for i in range(edge_index.size(1)):
+            u, v = edge_index[0, i].item(), edge_index[1, i].item()
+            if (u, v) not in unique_edges and (v, u) not in unique_edges:
+                unique_edges.add((u, v))
+
+        unique_edges = list(unique_edges)
+        unique_edges = torch.tensor(unique_edges, dtype=torch.long).t()
+
+        return unique_edges
+
+    g1_nodes = set()
+    g2_nodes = set()
+    for g1_node, g2_node in pattern.items():
+        g1_nodes.add(g1_node)
+        g2_nodes.add(g2_node)
+
+    g1_node_map = {node: idx for idx, node in enumerate(g1_nodes)}
+    g2_node_map = {node: idx for idx, node in enumerate(g2_nodes)}
+
+    g1_edge_index = []
+    for edge in graph1.edge_index.t():
+        if edge[0].item() in g1_nodes and edge[1].item() in g1_nodes:
+            g1_edge_index.append(
+                [g1_node_map[edge[0].item()], g1_node_map[edge[1].item()]]
+            )
+
+    g2_edge_index = []
+    for edge in graph2.edge_index.t():
+        if edge[0].item() in g2_nodes and edge[1].item() in g2_nodes:
+            g2_edge_index.append(
+                [g2_node_map[edge[0].item()], g2_node_map[edge[1].item()]]
+            )
+
+    g1_subgraph = Data(
+        x=graph1.x[list(g1_nodes)],
+        edge_index=remove_duplicate_edges(
+            torch.tensor(g1_edge_index, dtype=torch.long).t().contiguous()
+        ),
+        original_node_ids=torch.tensor(list(g1_nodes), dtype=torch.long),
+    )
+    g2_subgraph = Data(
+        x=graph2.x[list(g2_nodes)],
+        edge_index=remove_duplicate_edges(
+            torch.tensor(g2_edge_index, dtype=torch.long).t().contiguous()
+        ),
+        original_node_ids=torch.tensor(list(g2_nodes), dtype=torch.long),
+    )
+
+    return g1_subgraph, g2_subgraph
