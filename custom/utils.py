@@ -1282,7 +1282,7 @@ def plot_attentions(graph1, graph2, attention_pairs, title=""):
         **{k + len(G1.nodes): v for k, v in node_labels_G2.items()},
     }
 
-    plt.figure(figsize=(12, 8))
+    plt.figure(figsize=(12, 6))
     plt.gcf().patch.set_alpha(0)
 
     nx.draw(
