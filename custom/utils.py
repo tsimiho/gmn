@@ -423,12 +423,12 @@ def plot_graphs(edge_index, layer_clusters, graph1, graph2, title="", trainable=
                 G,
                 pos,
                 ax=ax,
-                with_labels=True,
+                with_labels=False,
                 node_color=node_colors,
                 cmap=plt.get_cmap("viridis"),
             )
         else:
-            nx.draw(G, pos, ax=ax, with_labels=True)
+            nx.draw(G, pos, ax=ax, with_labels=False)
         ax.set_title(title)
 
     for i, clusters in enumerate(layer_clusters):
@@ -508,7 +508,7 @@ def visualize_graphs_with_attention(
 
     plt.figure(figsize=(24, 14))
     nx.draw(
-        G1, pos1, with_labels=True, node_color="skyblue", edge_color="k", node_size=700
+        G1, pos1, with_labels=False, node_color="skyblue", edge_color="k", node_size=700
     )
     nx.draw(
         G2,
@@ -1008,7 +1008,7 @@ def plot_mutag(
             G,
             pos,
             node_color=node_colors,
-            with_labels=True,
+            with_labels=False,
             labels=node_labels,
             node_size=500,
             font_weight="bold",
@@ -1213,7 +1213,7 @@ def plot_attentions_mutag(graph1, graph2, attention_pairs, title=""):
     nx.draw(
         G_combined,
         pos=pos_combined,
-        with_labels=True,
+        with_labels=False,
         labels=node_labels_combined,
         node_color=node_colors_combined,
         edge_color="black",
@@ -1234,8 +1234,12 @@ def plot_attentions_mutag(graph1, graph2, attention_pairs, title=""):
     plt.show()
 
 
-def plot_attentions(graph1, graph2, attention_pairs, title=""):
+import matplotlib.pyplot as plt
+import networkx as nx
+from torch_geometric.utils import to_networkx
 
+
+def plot_attentions(graph1, graph2, attention_pairs, title=""):
     def get_node_labels(graph):
         node_labels = {}
         for node in range(graph.num_nodes):
@@ -1279,10 +1283,12 @@ def plot_attentions(graph1, graph2, attention_pairs, title=""):
     }
 
     plt.figure(figsize=(12, 8))
+    plt.gcf().patch.set_alpha(0)
+
     nx.draw(
         G_combined,
         pos=pos_combined,
-        with_labels=True,
+        with_labels=False,
         labels=node_labels_combined,
         node_color="#3b8bc2",
         edge_color="black",
