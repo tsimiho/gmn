@@ -1029,13 +1029,13 @@ def plot_mutag(
     if graph2 is None:
         fig, ax = plt.subplots()
         plot_single_graph(graph1, ax, original_x1, perm1)
-        fig.legend(handles=legend_handles, loc="lower left", title="Node Types")
+        # fig.legend(handles=legend_handles, loc="lower left", title="Node Types")
     else:
         fig, axes = plt.subplots(1, 2, figsize=(12, 6))
         plot_single_graph(graph1, axes[0], original_x1, perm1)
         plot_single_graph(graph2, axes[1], original_x2, perm2)
-        axes[0].set_title("Graph 1")
-        axes[1].set_title("Graph 2")
+        # axes[0].set_title("Graph 1")
+        # axes[1].set_title("Graph 2")
         fig.legend(handles=legend_handles, loc="lower left", title="Node Types")
 
     plt.show()
