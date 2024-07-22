@@ -1023,7 +1023,7 @@ def plot_mutag(
         mpatches.Patch(color=colormap(4), label="I"),
         mpatches.Patch(color=colormap(5), label="Cl"),
         mpatches.Patch(color=colormap(6), label="Br"),
-        mpatches.Patch(color=colormap(7), label="-"),
+        # mpatches.Patch(color=colormap(7), label="-"),
     ]
 
     if graph2 is None:
