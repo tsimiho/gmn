@@ -91,7 +91,6 @@ class GraphMatchingNetwork(torch.nn.Module):
         self.aggregator = GraphAggregator(self.args.dim, self.args.dim, self.args)
         self.layer_outputs = []
         self.layer_cross_attentions = []
-        self.mincut = []
         self.mlp = torch.nn.Sequential()
         self.args.n_clusters = args.n_clusters
         self.mlp.append(Linear(self.args.dim, self.args.n_clusters))
@@ -172,7 +171,6 @@ class GraphMatchingNetwork(torch.nn.Module):
         self.layer_outputs = []
         self.layer_cross_attentions = []
         self.topk_outputs = []
-        self.mincut = []
         self.norms_per_layer = []
         self.attention_sums_per_layer = []
 
