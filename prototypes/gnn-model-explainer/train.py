@@ -931,7 +931,9 @@ def benchmark_task(args, writer=None, feat="node-label"):
 
 def synthetic_task(args, writer=None, feat="node-label"):
     # Load PyG dataset
-    pyg_dataset = torch.load("my_data/cycle_line_star_complete_1.pt")
+    pyg_dataset = torch.load(
+        "my_data/cycle_line_star_complete_1.pt", weights_only=False
+    )
 
     graphs = []
     all_labels = []

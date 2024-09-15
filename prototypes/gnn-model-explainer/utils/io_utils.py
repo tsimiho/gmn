@@ -83,7 +83,8 @@ def save_checkpoint(model, optimizer, args, num_epochs=-1, isbest=False, cg_dict
         - isbest        : True if the model has the highest accuracy so far.
         - cg_dict       : A dictionary of the sampled computation graphs.
     """
-    filename = f"{args.ckptdir}/model_lr{args.lr}_hd{args.hidden_dim}_drop{args.dropout}_epochs{num_epochs}.pt"
+    # filename = f"{args.ckptdir}/model_lr{args.lr}_hd{args.hidden_dim}_drop{args.dropout}_epochs{num_epochs}.pt"
+    filename = create_filename(args.ckptdir, args, isbest, num_epochs=num_epochs)
     torch.save(
         {
             "epoch": num_epochs,
