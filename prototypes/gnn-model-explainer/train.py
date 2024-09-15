@@ -250,6 +250,7 @@ def train(
         "pred": np.expand_dims(predictions, axis=0),
         "train_idx": list(range(len(dataset))),
     }
+    checkpoint_name = f"model_lr{args.lr}_hd{args.hidden_dim}_drop{args.dropout}.pt"
     io_utils.save_checkpoint(model, optimizer, args, num_epochs=-1, cg_dict=cg_data)
     return model, val_accs
 
@@ -930,29 +931,35 @@ def benchmark_task(args, writer=None, feat="node-label"):
 
 def synthetic_task(args, writer=None, feat="node-label"):
     # Load PyG dataset
-    pyg_dataset = pyg_dataset = GraphDataset(
-        torch.load("my_data/cycle_line_star_complete_1.pt")
-    )
+    pyg_dataset = torch.load("my_data/cycle_line_star_complete_1.pt")
 
     graphs = []
-    all_labels = set()
+    all_labels = []
+
     for data in pyg_dataset:
+        # Convert PyG Data to NetworkX
         G = to_networkx(data, to_undirected=True)
+
+        # Check if the graph has any edges
+        if G.number_of_edges() == 0:
+            print(f"Graph with no edges found, skipping this graph.")
+            continue
 
         # Add graph label
         label = data.y.item()
         G.graph["label"] = label
-        all_labels.add(label)
+        all_labels.append(label)
 
         # Add node features
         for i, node in enumerate(G.nodes()):
-            G.nodes[node]["feat"] = data.x[i].numpy()
+            # Ensure data.x exists and has features for this node
+            if data.x is not None and i < data.x.size(0):
+                G.nodes[node]["feat"] = data.x[i].numpy()
+            else:
+                # Fallback to some default feature if needed
+                G.nodes[node]["feat"] = np.zeros(args.input_dim)
 
         graphs.append(G)
-
-    # Debug: Print unique labels and max label
-    print(f"Unique labels in the dataset: {sorted(all_labels)}")
-    print(f"Max label: {max(all_labels)}")
 
     # Ensure labels are zero-indexed
     label_map = {label: i for i, label in enumerate(sorted(all_labels))}
@@ -1217,7 +1224,7 @@ def arg_parse():
         lr=0.001,
         clip=2.0,
         batch_size=20,
-        num_epochs=1000,
+        num_epochs=100,
         train_ratio=0.8,
         test_ratio=0.1,
         num_workers=1,

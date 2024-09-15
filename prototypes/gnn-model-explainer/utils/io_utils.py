@@ -83,7 +83,7 @@ def save_checkpoint(model, optimizer, args, num_epochs=-1, isbest=False, cg_dict
         - isbest        : True if the model has the highest accuracy so far.
         - cg_dict       : A dictionary of the sampled computation graphs.
     """
-    filename = create_filename(args.ckptdir, args, isbest, num_epochs=num_epochs)
+    filename = f"{args.ckptdir}/model_lr{args.lr}_hd{args.hidden_dim}_drop{args.dropout}_epochs{num_epochs}.pt"
     torch.save(
         {
             "epoch": num_epochs,
@@ -104,7 +104,7 @@ def load_ckpt(args, isbest=False):
     print(filename)
     if os.path.isfile(filename):
         print("=> loading checkpoint '{}'".format(filename))
-        ckpt = torch.load(filename)
+        ckpt = torch.load(filename, weights_only=False)
     else:
         print("Checkpoint does not exist!")
         print("Checked path -- {}".format(filename))
@@ -131,7 +131,7 @@ def preprocess_cg(cg):
 
 def load_model(path):
     """Load a pytorch model."""
-    model = torch.load(path)
+    model = torch.load(path, weights_only=False)
     model.eval()
     if use_cuda:
         model
@@ -206,6 +206,9 @@ def denoise_graph(
         - theshold_num      :  The maximum number of nodes to threshold.
         - max_component     :  TODO
     """
+    if type(adj) is torch.Tensor:
+        adj = adj.detach().numpy()
+
     num_nodes = adj.shape[-1]
     G = nx.Graph()
     G.add_nodes_from(range(num_nodes))
@@ -268,6 +271,11 @@ def log_graph(
         nodecolor: the color of node, can be determined by 'label', or 'feat'. For feat, it needs to
             be one-hot'
     """
+
+    if Gc.number_of_edges() == 0:
+        print("Graph has no edges, skipping...")
+        return
+
     cmap = plt.get_cmap("Set1")
     plt.switch_backend("agg")
     fig = plt.figure(figsize=fig_size, dpi=dpi)

@@ -317,7 +317,7 @@ def main():
         else:
             # explain a set of nodes
             masked_adj = explainer.explain_nodes_gnn_stats(
-                range(0, 1, 5), prog_args
+                range(400, 700, 5), prog_args
             )
 
 

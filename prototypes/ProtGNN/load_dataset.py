@@ -7,8 +7,9 @@ import pickle
 import numpy as np
 import torch
 from torch.utils.data import Subset, random_split
-from torch_geometric.data import Data, DataLoader, InMemoryDataset
+from torch_geometric.data import Data, InMemoryDataset
 from torch_geometric.datasets import MoleculeNet
+from torch_geometric.loader import DataLoader
 from torch_geometric.utils import dense_to_sparse
 
 
@@ -135,6 +136,8 @@ def get_dataset(dataset_dir, dataset_name, task=None):
 
     if dataset_name.lower() == "MUTAG".lower():
         return load_MUTAG(dataset_dir, "MUTAG")
+    elif dataset_name.lower() == "synthetic":
+        return load_synthetic(dataset_dir, "synthetic")
     elif dataset_name.lower() in sync_dataset_dict.keys():
         sync_dataset_filename = sync_dataset_dict[dataset_name.lower()]
         return load_syn_data(dataset_dir, sync_dataset_filename)
@@ -146,12 +149,36 @@ def get_dataset(dataset_dir, dataset_name, task=None):
         raise NotImplementedError
 
 
+class CustomGraphDataset(InMemoryDataset):
+    def __init__(self, root, transform=None, pre_transform=None):
+        super(CustomGraphDataset, self).__init__(root, transform, pre_transform)
+        print(self.processed_paths[0])
+        self.data, self.slices = torch.load(self.processed_paths[0], weights_only=False)
+
+    @property
+    def processed_file_names(self):
+        return ["data.pt"]
+
+    def process(self):
+        data_list = self.load_data_from_source()
+
+        data, slices = self.collate(data_list)
+        torch.save((data, slices), self.processed_paths[0])
+
+    def load_data_from_source(self):
+        list_of_pyg_graphs = torch.load("my_data/cycle_line_star_complete_1_25+.pt")
+        return list_of_pyg_graphs
+
+    def __len__(self):
+        return len(self.data.y)
+
+
 class MUTAGDataset(InMemoryDataset):
     def __init__(self, root, name, transform=None, pre_transform=None):
         self.root = root
         self.name = name.upper()
         super(MUTAGDataset, self).__init__(root, transform, pre_transform)
-        self.data, self.slices = torch.load(self.processed_paths[0])
+        self.data, self.slices = torch.load(self.processed_paths[0], weights_only=False)
 
     def __len__(self):
         return len(self.slices["x"]) - 1
@@ -227,7 +254,9 @@ class SentiGraphDataset(InMemoryDataset):
     def __init__(self, root, name, transform=None, pre_transform=undirected_graph):
         self.name = name
         super(SentiGraphDataset, self).__init__(root, transform, pre_transform)
-        self.data, self.slices, self.supplement = torch.load(self.processed_paths[0])
+        self.data, self.slices, self.supplement = torch.load(
+            self.processed_paths[0], weights_only=False
+        )
 
     @property
     def raw_dir(self):
@@ -274,7 +303,7 @@ class SynGraphDataset(InMemoryDataset):
     def __init__(self, root, name, transform=None, pre_transform=None):
         self.name = name
         super(SynGraphDataset, self).__init__(root, transform, pre_transform)
-        self.data, self.slices = torch.load(self.processed_paths[0])
+        self.data, self.slices = torch.load(self.processed_paths[0], weights_only=False)
 
     @property
     def raw_dir(self):
@@ -303,7 +332,7 @@ class BA2MotifDataset(InMemoryDataset):
     def __init__(self, root, name, transform=None, pre_transform=None):
         self.name = name
         super(BA2MotifDataset, self).__init__(root, transform, pre_transform)
-        self.data, self.slices = torch.load(self.processed_paths[0])
+        self.data, self.slices = torch.load(self.processed_paths[0], weights_only=False)
 
     @property
     def raw_dir(self):
@@ -336,6 +365,11 @@ class BA2MotifDataset(InMemoryDataset):
             self.data, self.slices = self.collate(data_list)
 
         torch.save(self.collate(data_list), self.processed_paths[0])
+
+
+def load_synthetic(dataset_dir, dataset_name):
+    dataset = CustomGraphDataset("my_data")
+    return dataset
 
 
 def load_MUTAG(dataset_dir, dataset_name):

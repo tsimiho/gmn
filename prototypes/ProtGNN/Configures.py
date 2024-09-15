@@ -7,7 +7,7 @@ import torch
 class DataParser:
     def __init__(self):
         super().__init__()
-        self.dataset_name = "bbbp"
+        self.dataset_name = "synthetic"
         self.dataset_dir = "./datasets"
         self.task = None
         self.random_split: bool = True
@@ -32,8 +32,7 @@ class GATParser:  # hyper-parameter for gat model
 class ModelParser:
     def __init__(self):
         super().__init__()
-        # self.device: int = 0
-        self.model_name: str = "gcn"
+        self.model_name: str = "gin"
         self.checkpoint: str = "./checkpoint"
         self.concate: bool = False  # whether to concate the gnn features before mlp
         self.latent_dim: List[int] = [
@@ -56,11 +55,6 @@ class ModelParser:
         self.num_gat_layer = 3
 
     def process_args(self) -> None:
-        # self.device = torch.device('cpu')
-        # if torch.cuda.is_available():
-        #     self.device = torch.device("cuda", self.device_id)
-        # else:
-        #     pass
         pass
 
 
@@ -95,7 +89,7 @@ class TrainParser:
         self.learning_rate = 0.005
         self.batch_size = 24
         self.weight_decay = 0.0
-        self.max_epochs = 800
+        self.max_epochs = 100
         self.save_epoch = 10
         self.early_stopping = 80
         self.last_layer_optimizer_lr = 1e-4  # the learning rate of the last layer
@@ -125,4 +119,4 @@ random_seed = 1234
 random.seed(random_seed)
 np.random.seed(random_seed)
 torch.manual_seed(random_seed)
-# torch.cuda.manual_seed_all(random_seed)
+torch.cuda.manual_seed_all(random_seed)

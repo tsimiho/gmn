@@ -33,6 +33,7 @@ class GnnBase(nn.Module):
         super(GnnBase, self).__init__()
 
     def forward(self, data):
+        data = data
         logits, prob, emb1, emb2, min_distances = self.model(data)
         return logits, prob, emb1, emb2, min_distances
 
@@ -44,8 +45,6 @@ class GnnBase(nn.Module):
                 loaded_state_dict[k] = v
         self.load_state_dict(loaded_state_dict)
 
-    def to_device(self):
-        self.to(self.device)
 
     def save_state_dict(self):
         pass
@@ -55,10 +54,9 @@ class GnnNets(GnnBase):
     def __init__(self, input_dim, output_dim, model_args):
         super(GnnNets, self).__init__()
         self.model = get_model(input_dim, output_dim, model_args)
-        # self.device = model_args.device
 
     def forward(self, data, protgnn_plus=False, similarity=None):
-        # data = data.to(self.device)
+        data = data
         logits, prob, emb1, emb2, min_distances = self.model(data, protgnn_plus, similarity)
         return logits, prob, emb1, emb2, min_distances
 
@@ -67,9 +65,8 @@ class GnnNets_NC(GnnBase):
     def __init__(self, input_dim, output_dim, model_args):
         super(GnnNets_NC, self).__init__()
         self.model = get_model_NC(input_dim, output_dim, model_args)
-        # self.device = model_args.device
 
     def forward(self, data):
-        # data = data.to(self.device)
+        data = data
         logits, prob, emb, min_distances = self.model(data)
         return logits, prob, emb, min_distances

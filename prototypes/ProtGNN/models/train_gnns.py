@@ -64,7 +64,7 @@ def edge_mask(inputs, training=None):
     f3 = prot.unsqueeze(0).repeat(nodesize * nodesize, 1)
     # using the node embedding to calculate the edge weight
     f12self = torch.cat([f1, f2, f3], dim=-1)
-    h = f12self.to(model_args.device)
+    h = f12self
     for elayer in elayers:
         h = elayer(h)
     values = h.reshape(-1)
@@ -102,7 +102,6 @@ elayers = nn.ModuleList()
 elayers.append(nn.Sequential(nn.Linear(128 * 3, 64), nn.ReLU()))
 elayers.append(nn.Sequential(nn.Linear(64, 8), nn.ReLU()))
 elayers.append(nn.Linear(8, 1))
-# elayers.to(model_args.device)
 
 
 # train for graph classification
@@ -125,7 +124,7 @@ def train_GC(clst, sep):
     ckpt_dir = f"./checkpoint/{data_args.dataset_name}/"
     # checkpoint = torch.load(os.path.join(ckpt_dir, f'{model_args.model_name}_best.pth'))
     # gnnNets.update_state_dict(checkpoint['net'])
-    # gnnNets.to_device()
+    gnnNets
     criterion = nn.CrossEntropyLoss()
     optimizer = Adam(
         gnnNets.parameters(),
@@ -298,7 +297,9 @@ def train_GC(clst, sep):
 
     print(f"The best validation accuracy is {best_acc}.")
     # report test msg
-    checkpoint = torch.load(os.path.join(ckpt_dir, f"{model_args.model_name}_best.pth"))
+    checkpoint = torch.load(
+        os.path.join(ckpt_dir, f"{model_args.model_name}_best.pth"), weights_only=False
+    )
     gnnNets.update_state_dict(checkpoint["net"])
     test_state, _, _ = test_GC(dataloader["test"], gnnNets, criterion)
     print(f"Test: | Loss: {test_state['loss']:.3f} | Acc: {test_state['acc']:.3f}")
@@ -406,7 +407,7 @@ def train_NC():
 
     data = dataset[0]
     gnnNets_NC = GnnNets_NC(input_dim, output_dim, model_args)
-    # gnnNets_NC.to_device()
+    gnnNets_NC
     criterion = nn.CrossEntropyLoss()
     optimizer = Adam(
         gnnNets_NC.parameters(),
@@ -498,7 +499,9 @@ def train_NC():
             )
 
     # report test msg
-    checkpoint = torch.load(os.path.join(ckpt_dir, f"{model_args.model_name}_best.pth"))
+    checkpoint = torch.load(
+        os.path.join(ckpt_dir, f"{model_args.model_name}_best.pth"), weights_only=False
+    )
     gnnNets_NC.update_state_dict(checkpoint["net"])
     eval_info = evaluate_NC(data, gnnNets_NC, criterion)
     print(
@@ -534,13 +537,13 @@ def save_best(ckpt_dir, epoch, gnnNets, model_name, eval_acc, is_best):
     ckpt_path = os.path.join(ckpt_dir, pth_name)
     torch.save(state, ckpt_path)
     if is_best:
+        best_pth_name = f"{model_name}_best_clst_{args.clst}_sep_{args.sep}.pth"
         shutil.copy(ckpt_path, os.path.join(ckpt_dir, best_pth_name))
-    gnnNets
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="PyTorch implementation of ProtGNN")
-    parser.add_argument("--clst", type=float, default=0.0, help="cluster")
+    parser.add_argument("--clst", type=float, default=0.01, help="cluster")
     parser.add_argument("--sep", type=float, default=0.0, help="separation")
     args = parser.parse_args()
     train_GC(args.clst, args.sep)

@@ -8,8 +8,10 @@ import networkx as nx
 import torch
 import torch.nn as nn
 import tqdm
-from torch.utils.data import DataLoader, Dataset
 from torch_geometric.data import Batch, Data
+
+# from torch.utils.data import DataLoader, Dataset
+from torch_geometric.loader import DataLoader
 from torch_geometric.utils import to_networkx
 
 from Configures import mcts_args
@@ -190,11 +192,10 @@ if __name__ == "__main__":
     print("start training model==================")
     gnnNets = GnnNets(input_dim, output_dim, model_args)
     prototype_shape = (output_dim * model_args.num_prototypes_per_class, 128)
-    prototype_vectors = nn.Parameter(
-        torch.rand(prototype_shape), requires_grad=False
-    )
-    checkpoint = torch.load("./checkpoint/bbbp/gcn_best.pth")
+    prototype_vectors = nn.Parameter(torch.rand(prototype_shape), requires_grad=False)
+    checkpoint = torch.load("./checkpoint/synthetic/gcn_best.pth", weights_only=False)
     gnnNets.update_state_dict(checkpoint["net"])
+    gnnNets
     gnnNets.eval()
 
     save_dir = os.path.join(
