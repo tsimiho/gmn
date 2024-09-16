@@ -156,7 +156,7 @@ def arg_parse():
         hidden_dim=20,
         output_dim=20,
         num_gc_layers=3,
-        dropout=0.0,
+        dropout=0.1,
         method="base",
         name_suffix="",
         explainer_suffix="",
@@ -266,7 +266,7 @@ def main():
         explainer.explain(prog_args.explain_node, unconstrained=False)
     elif graph_mode:
         if prog_args.multigraph_class >= 0:
-            print(cg_dict["label"])
+            print("here", cg_dict["label"])
             # only run for graphs with label specified by multigraph_class
             labels = cg_dict["label"].numpy()
             graph_indices = []

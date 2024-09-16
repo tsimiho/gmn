@@ -104,6 +104,8 @@ class Explainer:
         label = torch.tensor(sub_label, dtype=torch.long)
 
         if self.graph_mode:
+            if graph_idx >= len(self.pred[0]):
+                graph_idx = len(self.pred[0]) - 1
             pred_label = np.argmax(self.pred[0][graph_idx], axis=0)
             print("Graph predicted label: ", pred_label)
         else:

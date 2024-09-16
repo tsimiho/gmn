@@ -964,9 +964,9 @@ def synthetic_task(args, writer=None, feat="node-label"):
         graphs.append(G)
 
     # Ensure labels are zero-indexed
-    label_map = {label: i for i, label in enumerate(sorted(all_labels))}
-    for G in graphs:
-        G.graph["label"] = label_map[G.graph["label"]]
+    # label_map = {label: i for i, label in enumerate(sorted(all_labels))}
+    # for G in graphs:
+    #     G.graph["label"] = label_map[G.graph["label"]]
 
     # Update num_classes
     args.num_classes = len(all_labels)
@@ -1223,7 +1223,7 @@ def arg_parse():
         max_nodes=100,
         cuda="1",
         feature_type="default",
-        lr=0.001,
+        lr=0.01,
         clip=2.0,
         batch_size=20,
         num_epochs=100,
