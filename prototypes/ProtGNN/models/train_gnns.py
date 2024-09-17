@@ -537,7 +537,7 @@ def save_best(ckpt_dir, epoch, gnnNets, model_name, eval_acc, is_best):
     ckpt_path = os.path.join(ckpt_dir, pth_name)
     torch.save(state, ckpt_path)
     if is_best:
-        best_pth_name = f"{model_name}_best_clst_{args.clst}_sep_{args.sep}.pth"
+        # best_pth_name = f"{model_name}_best_clst_{args.clst}_sep_{args.sep}.pth"
         shutil.copy(ckpt_path, os.path.join(ckpt_dir, best_pth_name))
 
 

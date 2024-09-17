@@ -106,11 +106,11 @@ venv.bak/
 # edit
 *.sw?
 data/
-log/
-syn/
-ckpt/
+# log/
+# syn/
+# ckpt/
 out/
-results/
+# results/
 path/
 
 .idea/

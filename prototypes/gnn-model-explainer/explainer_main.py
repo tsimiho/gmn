@@ -156,7 +156,7 @@ def arg_parse():
         hidden_dim=20,
         output_dim=20,
         num_gc_layers=3,
-        dropout=0.1,
+        dropout=0.01,
         method="base",
         name_suffix="",
         explainer_suffix="",

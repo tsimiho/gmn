@@ -166,7 +166,7 @@ class CustomGraphDataset(InMemoryDataset):
         torch.save((data, slices), self.processed_paths[0])
 
     def load_data_from_source(self):
-        list_of_pyg_graphs = torch.load("my_data/cycle_line_star_complete_1_25+.pt")
+        list_of_pyg_graphs = torch.load("my_data/cycle_line_star_complete_1.pt")
         return list_of_pyg_graphs
 
     def __len__(self):
