@@ -22,12 +22,8 @@ import torch.nn as nn
 from matplotlib.backends.backend_agg import FigureCanvasAgg as FigureCanvas
 from matplotlib.figure import Figure
 from sklearn.cluster import DBSCAN
-from sklearn.metrics import (
-    precision_recall_curve,
-    precision_score,
-    recall_score,
-    roc_auc_score,
-)
+from sklearn.metrics import (precision_recall_curve, precision_score,
+                             recall_score, roc_auc_score)
 from torch.autograd import Variable
 
 import utils.graph_utils as graph_utils
@@ -382,14 +378,14 @@ class Explainer:
                 max_component=False,
             )
             label = self.label[graph_idx]
-            io_utils.log_graph(
-                self.writer,
-                G_denoised,
-                "graph/graphidx_{}_label={}".format(graph_idx, label),
-                identify_self=False,
-                nodecolor="feat",
-                args=self.args,
-            )
+            # io_utils.log_graph(
+            #     self.writer,
+            #     G_denoised,
+            #     "graph/graphidx_{}_label={}".format(graph_idx, label),
+            #     identify_self=False,
+            #     nodecolor="feat",
+            #     args=self.args,
+            # )
             masked_adjs.append(masked_adj)
 
             G_orig = io_utils.denoise_graph(
@@ -400,17 +396,17 @@ class Explainer:
                 max_component=False,
             )
 
-            io_utils.log_graph(
-                self.writer,
-                G_orig,
-                "graph/graphidx_{}".format(graph_idx),
-                identify_self=False,
-                nodecolor="feat",
-                args=self.args,
-            )
+            # io_utils.log_graph(
+            #     self.writer,
+            #     G_orig,
+            #     "graph/graphidx_{}".format(graph_idx),
+            #     identify_self=False,
+            #     nodecolor="feat",
+            #     args=self.args,
+            # )
 
         # plot cmap for graphs' node features
-        io_utils.plot_cmap_tb(self.writer, "tab20", 20, "tab20_cmap")
+        # io_utils.plot_cmap_tb(self.writer, "tab20", 20, "tab20_cmap")
 
         return masked_adjs
 
