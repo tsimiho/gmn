@@ -22,8 +22,12 @@ import torch.nn as nn
 from matplotlib.backends.backend_agg import FigureCanvasAgg as FigureCanvas
 from matplotlib.figure import Figure
 from sklearn.cluster import DBSCAN
-from sklearn.metrics import (precision_recall_curve, precision_score,
-                             recall_score, roc_auc_score)
+from sklearn.metrics import (
+    precision_recall_curve,
+    precision_score,
+    recall_score,
+    roc_auc_score,
+)
 from torch.autograd import Variable
 
 import utils.graph_utils as graph_utils
@@ -367,6 +371,7 @@ class Explainer:
         Explain graphs.
         """
         masked_adjs = []
+        graphs = []
 
         for graph_idx in graph_indices:
             masked_adj = self.explain(node_idx=0, graph_idx=graph_idx, graph_mode=True)
@@ -396,6 +401,18 @@ class Explainer:
                 max_component=False,
             )
 
+            nx.draw(
+                G_orig,
+                with_labels=True,
+                node_color="red",
+                edge_color="black",
+                width=2,
+                node_size=700,
+                alpha=0.8,
+            )
+
+            graphs.append(G_orig)
+
             # io_utils.log_graph(
             #     self.writer,
             #     G_orig,
@@ -408,7 +425,7 @@ class Explainer:
         # plot cmap for graphs' node features
         # io_utils.plot_cmap_tb(self.writer, "tab20", 20, "tab20_cmap")
 
-        return masked_adjs
+        return masked_adjs, graphs
 
     def log_representer(self, rep_val, sim_val, alpha, graph_idx=0):
         """visualize output of representer instances."""
