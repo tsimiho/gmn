@@ -931,9 +931,7 @@ def benchmark_task(args, writer=None, feat="node-label"):
 
 def synthetic_task(args, writer=None, feat="node-label"):
     # Load PyG dataset
-    pyg_dataset = torch.load(
-        "my_data/cycle_line_star_complete_1.pt", weights_only=False
-    )
+    pyg_dataset = torch.load("mutag0.pt", weights_only=False)
 
     graphs = []
     all_labels = []
@@ -1257,7 +1255,7 @@ def main():
         print("Using CPU")
 
     # use --bmname=[dataset_name] for Reddit-Binary, Mutagenicity
-    if prog_args.bmname == "synthetic":
+    if prog_args.bmname == "mutag0":
         synthetic_task(prog_args, writer=writer)
     elif prog_args.bmname is not None:
         benchmark_task(prog_args, writer=writer)

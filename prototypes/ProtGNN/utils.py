@@ -44,7 +44,7 @@ class PlotUtils:
         ]:
             words = kwargs.get("words")
             self.plot_sentence(graph, nodelist, words=words, figname=figname)
-        elif self.dataset_name.lower() == "synthetic":
+        elif self.dataset_name.lower() in ["synthetic", "mutag0"]:
             x = kwargs.get("x")
             self.plot_custom_dataset(graph, nodelist, x, figname=figname)
         else:

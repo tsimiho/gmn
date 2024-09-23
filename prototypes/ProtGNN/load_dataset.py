@@ -136,6 +136,8 @@ def get_dataset(dataset_dir, dataset_name, task=None):
 
     if dataset_name.lower() == "MUTAG".lower():
         return load_MUTAG(dataset_dir, "MUTAG")
+    elif dataset_name.lower() == "mutag0":
+        return load_mutag0()
     elif dataset_name.lower() == "synthetic":
         return load_synthetic(dataset_dir, "synthetic")
     elif dataset_name.lower() in sync_dataset_dict.keys():
@@ -171,6 +173,27 @@ class CustomGraphDataset(InMemoryDataset):
 
     def __len__(self):
         return len(self.data.y)
+
+
+class CustomMutagDataset(InMemoryDataset):
+    def __init__(self, root, transform=None, pre_transform=None):
+        super().__init__(root, transform, pre_transform)
+        graph_list = torch.load("mutag0.pt", weights_only=False)
+        self.data, self.slices = self.collate(graph_list)
+
+    @property
+    def raw_file_names(self):
+        return []
+
+    @property
+    def processed_file_names(self):
+        return []
+
+    def download(self):
+        pass
+
+    def process(self):
+        pass
 
 
 class MUTAGDataset(InMemoryDataset):
@@ -369,6 +392,11 @@ class BA2MotifDataset(InMemoryDataset):
 
 def load_synthetic(dataset_dir, dataset_name):
     dataset = CustomGraphDataset("my_data")
+    return dataset
+
+
+def load_mutag0():
+    dataset = CustomMutagDataset(".")
     return dataset
 
 

@@ -7,8 +7,8 @@ import torch
 class DataParser:
     def __init__(self):
         super().__init__()
-        self.dataset_name = "synthetic"
-        self.dataset_dir = "./datasets"
+        self.dataset_name = "mutag0"
+        self.dataset_dir = "."
         self.task = None
         self.random_split: bool = True
         self.data_split_ratio: List = [
@@ -89,7 +89,7 @@ class TrainParser:
         self.learning_rate = 0.005
         self.batch_size = 24
         self.weight_decay = 0.0
-        self.max_epochs = 100
+        self.max_epochs = 50
         self.save_epoch = 10
         self.early_stopping = 80
         self.last_layer_optimizer_lr = 1e-4  # the learning rate of the last layer
