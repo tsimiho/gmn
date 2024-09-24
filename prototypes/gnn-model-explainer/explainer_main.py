@@ -244,6 +244,9 @@ def main():
     # load state_dict (obtained by model.state_dict() when saving checkpoint)
     model.load_state_dict(ckpt["model_state"])
 
+    test_set = torch.load("test_set.pth")
+    test_set = [g for g in test_set if g.y == 1]
+
     # Create explainer
     explainer = explain.Explainer(
         model=model,
@@ -257,6 +260,7 @@ def main():
         print_training=True,
         graph_mode=graph_mode,
         graph_idx=prog_args.graph_idx,
+        test_graphs=test_set,
     )
 
     # TODO: API should definitely be cleaner
@@ -273,8 +277,8 @@ def main():
             for i, l in enumerate(labels):
                 if l == prog_args.multigraph_class:
                     graph_indices.append(i)
-                if len(graph_indices) > 30:
-                    break
+                # if len(graph_indices) > 30:
+                #     break
             print(
                 "Graph indices for label ",
                 prog_args.multigraph_class,

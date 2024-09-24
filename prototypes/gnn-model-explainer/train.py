@@ -929,9 +929,10 @@ def benchmark_task(args, writer=None, feat="node-label"):
     evaluate(test_dataset, model, args, "Validation")
 
 
-def synthetic_task(args, writer=None, feat="node-label"):
+def mutag0_task(args, writer=None, feat="node-label"):
     # Load PyG dataset
-    pyg_dataset = torch.load("mutag0.pt", weights_only=False)
+    pyg_dataset = torch.load("train_set.pth", weights_only=False)
+    test_dataset = torch.load("test_set.pth", weights_only=False)
 
     graphs = []
     all_labels = []
@@ -961,12 +962,32 @@ def synthetic_task(args, writer=None, feat="node-label"):
 
         graphs.append(G)
 
-    # Ensure labels are zero-indexed
-    # label_map = {label: i for i, label in enumerate(sorted(all_labels))}
-    # for G in graphs:
-    #     G.graph["label"] = label_map[G.graph["label"]]
+    test_graphs = []
 
-    # Update num_classes
+    for data in test_dataset:
+        # Convert PyG Data to NetworkX
+        G = to_networkx(data, to_undirected=True)
+
+        # Check if the graph has any edges
+        if G.number_of_edges() == 0:
+            print(f"Graph with no edges found, skipping this graph.")
+            continue
+
+        # Add graph label
+        label = data.y.item()
+        G.graph["label"] = label
+
+        # Add node features
+        for i, node in enumerate(G.nodes()):
+            # Ensure data.x exists and has features for this node
+            if data.x is not None and i < data.x.size(0):
+                G.nodes[node]["feat"] = data.x[i].numpy()
+            else:
+                # Fallback to some default feature if needed
+                G.nodes[node]["feat"] = np.zeros(args.input_dim)
+
+        test_graphs.append(G)
+
     args.num_classes = len(all_labels)
     print(f"Number of classes: {args.num_classes}")
 
@@ -993,7 +1014,7 @@ def synthetic_task(args, writer=None, feat="node-label"):
         max_num_nodes,
         input_dim,
         assign_input_dim,
-    ) = prepare_data(graphs, args, max_nodes=args.max_nodes)
+    ) = prepare_data(graphs, args, test_graphs=test_graphs, max_nodes=args.max_nodes)
 
     if args.method == "soft-assign":
         print("Method: soft-assign")
@@ -1256,7 +1277,7 @@ def main():
 
     # use --bmname=[dataset_name] for Reddit-Binary, Mutagenicity
     if prog_args.bmname == "mutag0":
-        synthetic_task(prog_args, writer=writer)
+        mutag0_task(prog_args, writer=writer)
     elif prog_args.bmname is not None:
         benchmark_task(prog_args, writer=writer)
     elif prog_args.pkl_fname is not None:
