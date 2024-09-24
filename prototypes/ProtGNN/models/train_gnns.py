@@ -109,22 +109,19 @@ def train_GC(clst, sep):
     # attention the multi-task here
     print(clst)
     print(sep)
-    print("start loading data====================")
-    dataset = get_dataset(
-        data_args.dataset_dir, data_args.dataset_name, task=data_args.task
-    )
-    input_dim = dataset.num_node_features
-    output_dim = int(dataset.num_classes)
-    dataloader = get_dataloader(
-        dataset, train_args.batch_size, data_split_ratio=data_args.data_split_ratio
-    )
+
+    # Load the dataset splits
+    train_set = torch.load("train_set.pth", weights_only=False)
+    test_set = torch.load("test_set.pth", weights_only=False)
+
+    input_dim = train_set[0].x.shape[1]  # Get input dimension from node features
+    output_dim = int(
+        torch.max(torch.tensor([graph.y.item() for graph in train_set])) + 1
+    )  # Number of classes
 
     print("start training model==================")
     gnnNets = GnnNets(input_dim, output_dim, model_args)
     ckpt_dir = f"./checkpoint/{data_args.dataset_name}/"
-    # checkpoint = torch.load(os.path.join(ckpt_dir, f'{model_args.model_name}_best.pth'))
-    # gnnNets.update_state_dict(checkpoint['net'])
-    gnnNets
     criterion = nn.CrossEntropyLoss()
     optimizer = Adam(
         gnnNets.parameters(),
@@ -132,46 +129,36 @@ def train_GC(clst, sep):
         weight_decay=train_args.weight_decay,
     )
 
-    avg_nodes = 0.0
-    avg_edge_index = 0.0
-    for i in range(len(dataset)):
-        avg_nodes += dataset[i].x.shape[0]
-        avg_edge_index += dataset[i].edge_index.shape[1]
-    avg_nodes /= len(dataset)
-    avg_edge_index /= len(dataset)
+    # Calculate average number of nodes and edges
+    avg_nodes = sum(graph.x.shape[0] for graph in train_set) / len(train_set)
+    avg_edges = sum(graph.edge_index.shape[1] // 2 for graph in train_set) / len(
+        train_set
+    )
     print(
-        f"graphs {len(dataset)}, avg_nodes{avg_nodes :.4f}, avg_edge_index_{avg_edge_index/2 :.4f}"
+        f"graphs {len(train_set)}, avg_nodes {avg_nodes:.4f}, avg_edges {avg_edges:.4f}"
     )
 
     best_acc = 0.0
-    data_size = len(dataset)
-    print(f"The total num of dataset is {data_size}")
-
-    # save path for model
-    if not os.path.isdir("checkpoint"):
-        os.mkdir("checkpoint")
-    if not os.path.isdir(os.path.join("checkpoint", data_args.dataset_name)):
-        os.mkdir(os.path.join("checkpoint", f"{data_args.dataset_name}"))
-
     early_stop_count = 0
-    data_indices = dataloader["train"].dataset.indices
+
+    # Training loop
     for epoch in range(train_args.max_epochs):
         acc = []
         loss_list = []
         ld_loss_list = []
-        # Prototype projection
+
+        # Prototype projection (if applicable)
         if epoch >= train_args.proj_epochs and epoch % 10 == 0:
             gnnNets.eval()
             for i in range(output_dim * model_args.num_prototypes_per_class):
                 count = 0
                 best_similarity = 0
                 label = i // model_args.num_prototypes_per_class
-                for j in range(i * 10, len(data_indices)):
-                    data = dataset[data_indices[j]]
-                    if data.y == label:
+                for graph in train_set:
+                    if graph.y == label:
                         count += 1
                         coalition, similarity, prot = mcts(
-                            data, gnnNets, gnnNets.model.prototype_vectors[i]
+                            graph, gnnNets, gnnNets.model.prototype_vectors[i]
                         )
                         if similarity > best_similarity:
                             best_similarity = similarity
@@ -181,17 +168,20 @@ def train_GC(clst, sep):
                         print("Projection of prototype completed")
                         break
 
+        # Training the model
         gnnNets.train()
         if epoch < train_args.warm_epochs:
             warm_only(gnnNets)
         else:
             joint(gnnNets)
-        for batch in dataloader["train"]:
-            logits, probs, _, _, min_distances = gnnNets(batch)
-            loss = criterion(logits, batch.y)
-            # cluster loss
+
+        for graph in train_set:  # Instead of a dataloader, use train_set directly
+            logits, probs, _, _, min_distances = gnnNets(graph)
+            loss = criterion(logits, graph.y)
+
+            # Cluster, separation, sparsity, and diversity losses
             prototypes_of_correct_class = torch.t(
-                gnnNets.model.prototype_class_identity[:, batch.y].bool()
+                gnnNets.model.prototype_class_identity[:, graph.y].bool()
             )
             cluster_cost = torch.mean(
                 torch.min(
@@ -201,8 +191,6 @@ def train_GC(clst, sep):
                     dim=1,
                 )[0]
             )
-
-            # seperation loss
             separation_cost = -torch.mean(
                 torch.min(
                     min_distances[~prototypes_of_correct_class].reshape(
@@ -211,12 +199,10 @@ def train_GC(clst, sep):
                     dim=1,
                 )[0]
             )
-
-            # sparsity loss
             l1_mask = 1 - torch.t(gnnNets.model.prototype_class_identity)
             l1 = (gnnNets.model.last_layer.weight * l1_mask).norm(p=1)
 
-            # diversity loss
+            # Diversity loss
             ld = 0
             for k in range(output_dim):
                 p = gnnNets.model.prototype_vectors[
@@ -229,6 +215,7 @@ def train_GC(clst, sep):
                 matrix2 = torch.zeros(matrix1.shape)
                 ld += torch.sum(torch.where(matrix1 > 0, matrix1, matrix2))
 
+            # Total loss
             loss = (
                 loss
                 + clst * cluster_cost
@@ -237,75 +224,43 @@ def train_GC(clst, sep):
                 + 0.00 * ld
             )
 
-            # optimization
+            # Optimization
             optimizer.zero_grad()
             loss.backward()
             torch.nn.utils.clip_grad_value_(gnnNets.parameters(), clip_value=2.0)
             optimizer.step()
 
-            ## record
+            # Record
             _, prediction = torch.max(logits, -1)
             loss_list.append(loss.item())
             ld_loss_list.append(ld.item())
-            acc.append(prediction.eq(batch.y).cpu().numpy())
+            acc.append(prediction.eq(graph.y).cpu().numpy())
 
-        # report train msg
-        append_record(
-            "Epoch {:2d}, loss: {:.3f}, acc: {:.3f}".format(
-                epoch, np.average(loss_list), np.concatenate(acc, axis=0).mean()
-            )
-        )
+        # Report train msg
         print(
-            f"Train Epoch:{epoch}  |Loss: {np.average(loss_list):.3f} | Ld: {np.average(ld_loss_list):.3f} | "
-            f"Acc: {np.concatenate(acc, axis=0).mean():.3f}"
+            f"Train Epoch:{epoch} | Loss: {np.mean(loss_list):.3f} | Ld: {np.mean(ld_loss_list):.3f} | Acc: {np.mean(acc):.3f}"
         )
 
-        # report eval msg
-        eval_state = evaluate_GC(dataloader["eval"], gnnNets, criterion)
+        # Evaluate the model on the test set (instead of eval dataloader)
+        eval_state = evaluate_GC(test_set, gnnNets, criterion)
         print(
             f"Eval Epoch: {epoch} | Loss: {eval_state['loss']:.3f} | Acc: {eval_state['acc']:.3f}"
         )
-        append_record(
-            "Eval epoch {:2d}, loss: {:.3f}, acc: {:.3f}".format(
-                epoch, eval_state["loss"], eval_state["acc"]
-            )
-        )
 
-        # only save the best model
-        is_best = eval_state["acc"] > best_acc
-
+        # Early stopping and checkpoint saving logic
         if eval_state["acc"] > best_acc:
             early_stop_count = 0
+            best_acc = eval_state["acc"]
+            save_best(
+                ckpt_dir, epoch, gnnNets, model_args.model_name, best_acc, is_best=True
+            )
         else:
             early_stop_count += 1
 
         if early_stop_count > train_args.early_stopping:
             break
 
-        if is_best:
-            best_acc = eval_state["acc"]
-            early_stop_count = 0
-        if is_best or epoch % train_args.save_epoch == 0:
-            save_best(
-                ckpt_dir,
-                epoch,
-                gnnNets,
-                model_args.model_name,
-                eval_state["acc"],
-                is_best,
-            )
-
     print(f"The best validation accuracy is {best_acc}.")
-    # report test msg
-    checkpoint = torch.load(
-        os.path.join(ckpt_dir, f"{model_args.model_name}_best.pth"), weights_only=False
-    )
-    gnnNets.update_state_dict(checkpoint["net"])
-    test_state, _, _ = test_GC(dataloader["test"], gnnNets, criterion)
-    print(f"Test: | Loss: {test_state['loss']:.3f} | Acc: {test_state['acc']:.3f}")
-    append_record(
-        "loss: {:.3f}, acc: {:.3f}".format(test_state["loss"], test_state["acc"])
-    )
 
 
 def evaluate_GC(eval_dataloader, gnnNets, criterion):

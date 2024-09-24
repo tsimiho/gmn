@@ -89,7 +89,7 @@ class TrainParser:
         self.learning_rate = 0.005
         self.batch_size = 24
         self.weight_decay = 0.0
-        self.max_epochs = 50
+        self.max_epochs = 10
         self.save_epoch = 10
         self.early_stopping = 80
         self.last_layer_optimizer_lr = 1e-4  # the learning rate of the last layer
