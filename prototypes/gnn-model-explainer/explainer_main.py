@@ -149,10 +149,10 @@ def arg_parse():
         opt="adam",
         opt_scheduler="none",
         cuda="0",
-        lr=0.1,
+        lr=0.05,
         clip=2.0,
         batch_size=20,
-        num_epochs=100,
+        num_epochs=500,
         hidden_dim=20,
         output_dim=20,
         num_gc_layers=3,
@@ -170,9 +170,59 @@ def arg_parse():
     return parser.parse_args()
 
 
-def main():
+class Args:
+    def __init__(self, **kwargs):
+        self.__dict__.update(kwargs)
+
+
+prog_args = Args(
+    logdir="log",
+    ckptdir="ckpt",
+    dataset="mutag0",
+    opt="adam",
+    opt_scheduler="none",
+    cuda="0",
+    lr=0.05,
+    clip=2.0,
+    batch_size=20,
+    num_epochs=500,
+    hidden_dim=20,
+    output_dim=20,
+    num_gc_layers=3,
+    dropout=0.01,
+    method="base",
+    name_suffix="",
+    explainer_suffix="",
+    align_steps=1000,
+    explain_node=None,
+    graph_idx=-1,
+    mask_act="sigmoid",
+    multigraph_class=1,
+    multinode_class=-1,
+    # Other arguments
+    bmname="mutag0",
+    pkl_fname=None,
+    clean_log=False,
+    gpu=False,
+    bn=False,
+    bias=True,
+    writer=True,
+    mask_bias=False,
+    graph_mode=True,
+)
+
+
+def main(
+    thershold=0, lr=0, num_epochs=0, hidden_dim=20, output_dim=20, num_gc_layers=3
+):
     # Load a configuration
-    prog_args = arg_parse()
+    # prog_args = arg_parse()
+    prog_args.thershold = thershold
+    prog_args.lr = lr
+    prog_args.num_epochs = num_epochs
+    prog_args.hidden_dim = hidden_dim
+    prog_args.output_dim = output_dim
+    prog_args.num_gc_layers = num_gc_layers
 
     if prog_args.gpu:
         os.environ["CUDA_VISIBLE_DEVICES"] = prog_args.cuda
@@ -325,5 +375,5 @@ def main():
             )
 
 
-if __name__ == "__main__":
-    main()
+# if __name__ == "__main__":
+#     main()

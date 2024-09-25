@@ -55,6 +55,7 @@ class Explainer:
         graph_mode=False,
         graph_idx=False,
         test_graphs=None,
+        threshold=0.5,
     ):
         self.model = model
         self.model.eval()
@@ -77,6 +78,7 @@ class Explainer:
         self.writer = writer
         self.print_training = print_training
         self.test_graphs = test_graphs
+        self.threshold = threshold
 
     # Main method
     def explain(
@@ -354,11 +356,20 @@ class Explainer:
             )
             graphs.append(G_orig)
 
-            for node in G_orig.nodes:
-                if "self" in G_orig.nodes[node]:
-                    del G_orig.nodes[node]["self"]
+            G_denoised = io_utils.denoise_graph(
+                masked_adj,
+                0,
+                threshold=self.threshold if self.threshold < 1 else None,
+                threshold_num=self.threshold if self.threshold >= 1 else None,
+                feat=feat,
+                max_component=False,
+            )
+
+            for node in G_denoised.nodes:
+                if "self" in G_denoised.nodes[node]:
+                    del G_denoised.nodes[node]["self"]
             torch.save(
-                (data, from_networkx(G_orig)),
+                (data, from_networkx(G_denoised)),
                 f"gnnexplainer_mutag0_graphs/graph_{i}.pt",
             )
             # io_utils.log_graph(
