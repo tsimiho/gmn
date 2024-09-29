@@ -193,7 +193,7 @@ if __name__ == "__main__":
     gnnNets = GnnNets(input_dim, output_dim, model_args)
     prototype_shape = (output_dim * model_args.num_prototypes_per_class, 128)
     prototype_vectors = nn.Parameter(torch.rand(prototype_shape), requires_grad=False)
-    checkpoint = torch.load("./checkpoint/mutag0/gin_best.pth", weights_only=False)
+    checkpoint = torch.load("./checkpoint/ba2motifs/gin_best.pth", weights_only=False)
     gnnNets.update_state_dict(checkpoint["net"])
     gnnNets
     gnnNets.eval()

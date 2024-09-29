@@ -138,6 +138,8 @@ def get_dataset(dataset_dir, dataset_name, task=None):
         return load_MUTAG(dataset_dir, "MUTAG")
     elif dataset_name.lower() == "mutag0":
         return load_mutag0()
+    elif dataset_name.lower() == "ba2motifs":
+        return load_ba2motifs()
     elif dataset_name.lower() == "synthetic":
         return load_synthetic(dataset_dir, "synthetic")
     elif dataset_name.lower() in sync_dataset_dict.keys():
@@ -397,6 +399,18 @@ def load_synthetic(dataset_dir, dataset_name):
 
 def load_mutag0():
     dataset = CustomMutagDataset(".")
+    return dataset
+
+
+def load_ba2motifs():
+    from torch_geometric.datasets import BA2MotifDataset
+
+    dataset = BA2MotifDataset("datasets")
+
+    for data in dataset:
+        num_nodes, num_features = data.x.shape
+        data.x = torch.ones((num_nodes, num_features))
+
     return dataset
 
 

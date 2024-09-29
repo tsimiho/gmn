@@ -111,8 +111,8 @@ def train_GC(clst, sep):
     print(sep)
 
     # Load the dataset splits
-    train_set = torch.load("train_set.pth", weights_only=False)
-    test_set = torch.load("test_set.pth", weights_only=False)
+    train_set = torch.load("ba2motifs_train_split.pt", weights_only=False)
+    test_set = torch.load("ba2motifs_test_split.pt", weights_only=False)
 
     input_dim = train_set[0].x.shape[1]  # Get input dimension from node features
     output_dim = int(
